@@ -2,7 +2,8 @@ import Header from "./shared/Header";
 import NotFound from "./shared/NotFound";
 import Home from "./pages/Home";
 import Details from "./pages/Details";
-import Footer from "./shared/Footer"
+import Footer from "./shared/Footer";
+import NavBar from "./shared/NavBar";
 import { Routes, Route } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import { Fragment } from "react";
@@ -10,7 +11,7 @@ import { Fragment } from "react";
 function App() {
   return (
     <Fragment>
-      <Header />
+      <NavBar />
       <ToastContainer position="bottom-right" />
       <Routes>
         <Route exact path="/" element={<Home />} />
