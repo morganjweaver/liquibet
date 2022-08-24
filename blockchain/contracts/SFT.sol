@@ -65,4 +65,8 @@ contract SFT is KeeperCompatibleInterface, ERC1155, Ownable, ChainlinkClient {
             // MAKE SURE LIQUIDATED CONTRACTS DO NOT GET UN-LIQUIDATED
         }
     }
+
+    function setTokenHealth(string memory health, string memory tokenUri, uint256 tokenId) private {
+        // Ref: https://github.com/kwsantiago/weather-nft/blob/main/contracts/Consensus2021ChainlinkWeatherNFT.sol
+    }
 }
