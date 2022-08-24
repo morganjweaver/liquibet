@@ -57,9 +57,9 @@ function Navbar() {
   }
 
   return (
-    <div className="">
-      <nav className="w-screen">
-        <ul className="flex items-end justify-between py-3 bg-transparent pr-5">
+    <div className="bg-[#5723AB]">
+      <nav className="w-screen px-8">
+        <ul className="flex items-end justify-between py-3 bg-transparent pr-5 text-white">
           <li className="flex items-end ml-5 pb-2">
             <Link to="/">
               <img
@@ -69,13 +69,11 @@ function Navbar() {
                 height={120}
                 className="inline-block -mt-2"
               />
-              <div className="inline-block font-bold text-xl ml-2">
-                LiquiBet
-              </div>
+              <div className="inline-block text-xl ml-2">LiquiBet</div>
             </Link>
           </li>
           <li className="w-2/6">
-            <ul className="lg:flex justify-between font-bold mr-10 text-lg">
+            <ul className="lg:flex justify-between mr-10 text-lg">
               {location.pathname === "/" ? (
                 <li className="border-b-2 hover:pb-0 p-2">
                   <Link to="/">LiquiBet</Link>
@@ -105,8 +103,8 @@ function Navbar() {
               )}
               <li>
                 <button
-                  className="enableEthereumButton bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-sm"
-                  onClick={connect()}
+                  className="enableEthereumButton bg-[#B5289E] hover:bg-[#B5289EBB] text-white py-2 px-4 rounded text-sm"
+                  onClick={connect}
                 >
                   {connected ? "Connected" : "Connect Wallet"}
                 </button>
@@ -115,7 +113,7 @@ function Navbar() {
           </li>
         </ul>
       </nav>
-      <div className="text-bold text-right mr-10 text-sm">
+      <div className="text-bold text-right mr-10 text-sm text-white">
         {currAddress !== "" ? "Connected to" : "Not Connected. Please login."}{" "}
         {currAddress !== ""
           ? currAddress.substring(0, 6) +
