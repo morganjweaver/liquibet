@@ -6,17 +6,26 @@ import "hardhat/console.sol";
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Burnable.sol";
+import "@chainlink/contracts/src/v0.8/KeeperCompatible.sol";
+import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
-contract SFT is ERC1155, Ownable, ERC1155Burnable {
-    uint256 public constant TIER_1 = 1; // 10% fluctuation
-    uint256 public constant TIER_2 = 2; // 17% fluctuaton
-    uint256 public constant TIER_3 = 3; // 25% fluctuation
-    uint256 public constant TIER_4 = 4; // 35% fluctuation
-    uint256 public constant TIER_5 = 5; // 50% fluctuation
+contract SFT is ERC1155, Ownable, ERC1155Burnable, KeeperCompatibleInterface {
+    uint8 public constant TIER_1 = 1; // 10% fluctuation
+    uint8 public constant TIER_2 = 2; // 17% fluctuaton
+    uint8 public constant TIER_3 = 3; // 25% fluctuation
+    uint8 public constant TIER_4 = 4; // 35% fluctuation
+    uint8 public constant TIER_5 = 5; // 50% fluctuation
+
+    AggregatorV3Interface public pricefeed;
+
+    uint256 interval;
+    uint256 public lastTimeStamp;
+    int256 public initialPrice;
 
     mapping(uint256 => string) private _uris;
+    mapping(uint8 => bool) private _isLiquidated;
 
-    // id:i equals health_i
+    // id:0 means liquidated, id:5 is healthiest SFT
     string[] healthUrisIpfs = [
         "https://ipfs.io/ipfs/QmTppFVUw434kCXN393qAKzhZAvTiywB1hv1xKa1xQxPEo/0.json",
         "https://ipfs.io/ipfs/QmTppFVUw434kCXN393qAKzhZAvTiywB1hv1xKa1xQxPEo/1.json",
@@ -26,12 +35,21 @@ contract SFT is ERC1155, Ownable, ERC1155Burnable {
         "https://ipfs.io/ipfs/QmTppFVUw434kCXN393qAKzhZAvTiywB1hv1xKa1xQxPEo/5.json"
     ];
 
-    constructor() ERC1155("") {
-        _uris[1] = healthUrisIpfs[5];
-        _uris[2] = healthUrisIpfs[5];
-        _uris[3] = healthUrisIpfs[5];
-        _uris[4] = healthUrisIpfs[5];
-        _uris[5] = healthUrisIpfs[5];
+    constructor(uint256 updateInterval, address _pricefeed) ERC1155("") {
+        interval = updateInterval;
+        lastTimeStamp = block.timestamp; //  seconds since unix epoch
+
+        pricefeed = AggregatorV3Interface(_pricefeed);
+
+        // set the price for the chosen currency pair.
+        initialPrice = getLatestPrice();
+
+        // all STFs start with an healthy image
+        _uris[TIER_1] = healthUrisIpfs[5];
+        _uris[TIER_2] = healthUrisIpfs[5];
+        _uris[TIER_3] = healthUrisIpfs[5];
+        _uris[TIER_4] = healthUrisIpfs[5];
+        _uris[TIER_5] = healthUrisIpfs[5];
     }
 
     function uri(uint256 id) public view override returns (string memory) {
@@ -45,97 +63,121 @@ contract SFT is ERC1155, Ownable, ERC1155Burnable {
     function setTokenUri(uint256 id, string memory newUri) public {
         _uris[id] = newUri;
     }
+
+    // Chainlink functions
+    function getLatestPrice() public view returns (int256) {
+        (, int256 price, , , ) = pricefeed.latestRoundData();
+
+        return price;
+    }
+
+    function checkUpkeep(
+        bytes calldata /* checkData */
+    )
+        external
+        view
+        override
+        returns (
+            bool upkeepNeeded,
+            bytes memory /*performData */
+        )
+    {
+        upkeepNeeded = (block.timestamp - lastTimeStamp) > interval;
+    }
+
+    function performUpkeep(
+        bytes calldata /* performData */
+    ) external override {
+        //We highly recommend revalidating the upkeep in the performUpkeep function
+        if ((block.timestamp - lastTimeStamp) > interval) {
+            lastTimeStamp = block.timestamp;
+            int latestPrice = getLatestPrice();
+
+            if (latestPrice >= initialPrice) {
+                console.log("NO LIQUIDATION -> returning!");
+                return;
+            }
+
+            if (latestPrice < initialPrice / 2) {
+                console.log("All SFTs get liquidated");
+                setTokenUri(TIER_1, healthUrisIpfs[0]);
+                setTokenUri(TIER_2, healthUrisIpfs[0]);
+                setTokenUri(TIER_3, healthUrisIpfs[0]);
+                setTokenUri(TIER_4, healthUrisIpfs[0]);
+                setTokenUri(TIER_5, healthUrisIpfs[0]);
+                _isLiquidated[TIER_1] = true;
+                _isLiquidated[TIER_2] = true;
+                _isLiquidated[TIER_3] = true;
+                _isLiquidated[TIER_4] = true;
+                _isLiquidated[TIER_5] = true;
+                return;
+            }
+            if (latestPrice < initialPrice / 4) {
+                setTokenUri(TIER_1, healthUrisIpfs[0]);
+                setTokenUri(TIER_2, healthUrisIpfs[0]);
+                setTokenUri(TIER_3, healthUrisIpfs[0]);
+                setTokenUri(TIER_4, healthUrisIpfs[0]);
+                if (!_isLiquidated[TIER_5]) {
+                    setTokenUri(TIER_5, healthUrisIpfs[1]);
+                }
+                _isLiquidated[TIER_1] = true;
+                _isLiquidated[TIER_2] = true;
+                _isLiquidated[TIER_3] = true;
+                _isLiquidated[TIER_4] = true;
+                return;
+            }
+            if (latestPrice < initialPrice / 5) {
+                setTokenUri(TIER_1, healthUrisIpfs[0]);
+                setTokenUri(TIER_2, healthUrisIpfs[0]);
+                setTokenUri(TIER_3, healthUrisIpfs[0]);
+                if (!_isLiquidated[TIER_4]) {
+                    setTokenUri(TIER_4, healthUrisIpfs[1]);
+                }
+                if (!_isLiquidated[TIER_5]) {
+                    setTokenUri(TIER_5, healthUrisIpfs[2]);
+                }
+                _isLiquidated[TIER_1] = true;
+                _isLiquidated[TIER_2] = true;
+                _isLiquidated[TIER_3] = true;
+                return;
+            }
+            if (latestPrice < initialPrice / 10) {
+                setTokenUri(TIER_1, healthUrisIpfs[0]);
+                setTokenUri(TIER_2, healthUrisIpfs[0]);
+                if (!_isLiquidated[TIER_3]) {
+                    setTokenUri(TIER_3, healthUrisIpfs[1]);
+                }
+                if (!_isLiquidated[TIER_4]) {
+                    setTokenUri(TIER_4, healthUrisIpfs[2]);
+                }
+                if (!_isLiquidated[TIER_5]) {
+                    setTokenUri(TIER_5, healthUrisIpfs[3]);
+                }
+                _isLiquidated[TIER_1] = true;
+                _isLiquidated[TIER_2] = true;
+                return;
+            }
+            if (latestPrice < initialPrice / 20) {
+                console.log("All SFTs get liquidated");
+                setTokenUri(TIER_1, healthUrisIpfs[0]);
+                if (!_isLiquidated[TIER_2]) {
+                    setTokenUri(TIER_2, healthUrisIpfs[1]);
+                }
+                if (!_isLiquidated[TIER_3]) {
+                    setTokenUri(TIER_3, healthUrisIpfs[2]);
+                }
+                if (!_isLiquidated[TIER_4]) {
+                    setTokenUri(TIER_4, healthUrisIpfs[3]);
+                }
+                if (!_isLiquidated[TIER_5]) {
+                    setTokenUri(TIER_5, healthUrisIpfs[4]);
+                }
+                _isLiquidated[TIER_1] = true;
+                return;
+            }
+        } else {
+            console.log(" INTERVAL NOT UP!");
+            return;
+        }
+    }
 }
-
-// // https://docs.chain.link/docs/chainlink-keepers/compatible-contracts/
-
-// contract SFT is KeeperCompatibleInterface, ERC1155, Ownable, ChainlinkClient {
-//     mapping(string => string) public weatherToWeatherURI;
-//     mapping(uint256 => uint256) balanceOf; // Store liquidation winnings per NFT ID
-
-//     // How should we represent both asset pool AND tier?
-
-//     // The percentages are just starting points.  We can adjust.
-
-//     uint256 public constant TIER_1 = 1; // 10% fluctuation
-//     uint256 public constant TIER_2 = 2; // 17% fluctuaton
-//     uint256 public constant TIER_3 = 3; // 25% fluctuation
-//     uint256 public constant TIER_4 = 4; // 35% fluctuation
-//     uint256 public constant TIER_5 = 5; // 50% fluctuation
-
-//     constructor(
-//         address _link,
-//         address _priceFeed,
-//         address _oracle,
-//         bytes32 _jobId,
-//         uint256 _fee
-//     ) public ERC1155("LiquiBetSFT", "LIQ") {
-//         if (_link == address(0)) {
-//             setPublicChainlinkToken();
-//         } else {
-//             setChainlinkToken(_link);
-//         }
-//         // GOERLI ONLY address in aggregator
-//         priceFeed = AggregatorV3Interface(
-//             0xA39434A63A52E749F02807ae27335515BA4b07F7
-//         );
-//         priceFeedAddress = _priceFeed;
-//         // Metadata with title, description, imageURI of Dynamic NFT
-//         priceToImageURI[
-//             "health_0"
-//         ] = "https://ipfs.io/ipfs/QmPgbYqB2zmrMbdrGknFUueZEwvwEprHuncNdg5Rk9XBpz";
-//         priceToImageURI[
-//             "health_1"
-//         ] = "https://ipfs.io/ipfs/QmVZGfDxHRyS7crtLoN1kQ1YXbMiZkHgxGh1pthjLgLATM";
-//         priceToImageURI[
-//             "health_2"
-//         ] = "https://ipfs.io/ipfs/QmNcZzxdWnpw7Day8dptMfBrhkDbRtiuHkd1T6acXPDsqp";
-//         priceToImageURI[
-//             "health_3"
-//         ] = "https://ipfs.io/ipfs/QmPwi7t3V363f6NyPEuYNG5qUDR7gJt3P5VqbGz9CNjw6q";
-//         priceToImageURI[
-//             "health_4"
-//         ] = "https://ipfs.io/ipfs/QmToCCL4HDXC2Jrsggf9pPDB8F6vzGkKd5kZb1uP21Gphm";
-//         priceToImageURI[
-//             "health_5"
-//         ] = "https://ipfs.io/ipfs/QmNgHWiGbo7Xu1U4WF1PJxmDGSVFM8FTtbXGLZtmRump8E";
-//         oracle = _oracle;
-//         jobId = _jobId;
-//         fee = _fee;
-//     }
-
-//     // Prob won't need this
-//     function checkUpkeep(
-//         bytes calldata /* checkData */
-//     )
-//         external
-//         view
-//         override
-//         returns (
-//             bool upkeepNeeded,
-//             bytes memory /* performData */
-//         )
-//     {
-//         upkeepNeeded = (block.timestamp - lastTimeStamp) > interval;
-//     }
-
-//     function performUpkeep(
-//         bytes calldata /* performData */
-//     ) external override {
-//         if ((block.timestamp - lastTimeStamp) > interval) {
-//             lastTimeStamp = block.timestamp;
-//             // CHECK ORACLE
-//             // CALCULATE MOVING AVERAGE BASED ON (???) 12 spot checks from today?
-//             // BASED ON TIER, UPDATE IMAGE
-//             // MAKE SURE LIQUIDATED CONTRACTS DO NOT GET UN-LIQUIDATED
-//         }
-//     }
-
-//     function setTokenHealth(
-//         string memory health,
-//         string memory tokenUri,
-//         uint256 tokenId
-//     ) private {
-//         // Ref: https://github.com/kwsantiago/weather-nft/blob/main/contracts/Consensus2021ChainlinkWeatherNFT.sol
-//     }
-// }

@@ -13,13 +13,16 @@ async function main() {
   if (!checkBalance(signer)) {
     return;
   }
-  console.log("Deploying Ballot contract");
+  console.log("Deploying SFT contract");
   const SFTFactory = new ethers.ContractFactory(
     SFTJson.abi,
     SFTJson.bytecode,
     signer
   );
-  const SFTContract = await SFTFactory.deploy();
+  const SFTContract = await SFTFactory.deploy(
+    60 * 60 * 24,
+    "0xa39434a63a52e749f02807ae27335515ba4b07f7"
+  );
   console.log("Awaiting confirmations");
   await SFTContract.deployed();
   console.log("Completed");
