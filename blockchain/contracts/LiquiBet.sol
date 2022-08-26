@@ -17,7 +17,7 @@ interface IERC1155Token is IERC1155 {
 interface IStakingProvider {
     function getStakingInfo() external returns (bytes32 name, bytes32 asset, uint256 apy);
     function stake() external payable;
-    function withdraw() external;
+    function withdraw() external returns (uint256 amount);
 }
 
 contract Liquibet is Ownable { 
@@ -29,6 +29,7 @@ contract Liquibet is Ownable {
     Tier[] tiers;
     StakingProvider stakingInfo;
     uint256 creatorFee;
+    uint256 totalPlayersCount;
     bool exists;
   }
 
@@ -43,7 +44,7 @@ contract Liquibet is Ownable {
     address contractAddress;
     bytes32 asset;
     uint256 apy;
-    uint amount;
+    uint amountStaked;
   }
 
   struct AssetPair {
@@ -96,6 +97,7 @@ contract Liquibet is Ownable {
       new Tier[](5), 
       stakingProvider,
       0,
+      0,
       true
     );
     
@@ -132,10 +134,11 @@ contract Liquibet is Ownable {
     token.mint(msg.sender, tierId, amount, "");
 
     // store pool ETH amount 
-    pool.stakingInfo.amount += msg.value - fee;
+    pool.stakingInfo.amountStaked += msg.value - fee;
     pool.creatorFee += fee;
 
     pool.tiers[tierId].players.push(msg.sender);
+    pool.totalPlayersCount++;
 
     // emit TokenMinted()
   }
@@ -144,30 +147,29 @@ contract Liquibet is Ownable {
     // check that lockin period ended
     Pool storage pool = pools[poolId];
     require(block.timestamp > pool.startDateTime + pool.lockPeriod, "Pool locking period is still in effect");
+    
     // withdraw funds from staking contract
     IStakingProvider stakingProvider = IStakingProvider(pool.stakingInfo.contractAddress);
-    stakingProvider.withdraw();
-    
-    // calculate the liqudation data    
-    uint256 winningPlayersCount;
-    uint256 totalLiquidatedFunds;
-    for (uint8 i = 0; i < pool.tiers.length; i++) {
-      Tier storage tier = pool.tiers[i];
-      if (tier.liquidationPrice < pool.assetPair.lowestPrice) {
-        winningPlayersCount += tier.players.length;
-        totalLiquidatedFunds += tier.buyInAmount * tier.players.length;
+    uint256 totalAmount = stakingProvider.withdraw();
+
+    // lottery
+    uint256 lotteryPrize = totalAmount - pool.stakingInfo.amountStaked;
+    if (lotteryPrize > 0) {
+      address winner = getLotteryWinner(pool);
+      if (winner != address(0)) {
+        poolLotteryWinners[poolId][winner] = lotteryPrize;
       }
     }
+
+    // liquidations
+    (uint256 winningPlayersCount, uint256 totalLiquidatedFunds) = getLiquidationData(pool);
+
+    // TODO if winningPlayersCount = 0 -> funds distributed to other pools and pool creator
     
-    // distribute the funds of lower tiers to the higher tiers
-    for (uint8 i = 0; i < pool.tiers.length; i++) {
-      Tier storage tier = pool.tiers[i];
-      if (tier.liquidationPrice < pool.assetPair.lowestPrice) {
-        // todo this could fail if we have unlimited number of players!
-        for (uint256 j = 0; j < tier.players.length; j++) {
-          poolLiquidationWinners[poolId][tier.players[j]] = totalLiquidatedFunds / winningPlayersCount; 
-        }
-      }
+    if (winningPlayersCount > 0) {
+      // distribute the funds of lower tiers to the higher tiers
+      uint256 amountForEachWinner = totalLiquidatedFunds / winningPlayersCount;
+      distributeFundsToLiquidationWinners(amountForEachWinner, poolId, pool);
     }
   }
 
@@ -188,7 +190,7 @@ contract Liquibet is Ownable {
     // get the staking provider info from the pool
     IStakingProvider stakingProvider = IStakingProvider(pool.stakingInfo.contractAddress);
     // call the staking provider stake function
-    stakingProvider.stake{ value: pool.stakingInfo.amount }();
+    stakingProvider.stake{ value: pool.stakingInfo.amountStaked }();
   }
 
   // get the price data from chainlink price feed and store it
@@ -202,6 +204,62 @@ contract Liquibet is Ownable {
       //   pool.assetPair.lowestPrice = currentPrice;
       // }
     }
+  }
+
+  function getLotteryWinner(Pool storage pool) private view returns (address winner) {
+    
+    address[] memory allPlayers = new address[](pool.totalPlayersCount);
+    uint256 arrIndex;
+    for (uint8 i = 0; i < pool.tiers.length; i++) {
+      Tier memory tier = pool.tiers[i];
+      for (uint256 j = 0; j < tier.players.length; j++) { 
+        allPlayers[arrIndex] = tier.players[j];
+        arrIndex++;
+      }
+    }
+
+    if (allPlayers.length > 0) {
+        uint256 winnerIndex = getRandomNumber() % allPlayers.length;
+        return allPlayers[winnerIndex];
+    }
+
+    return address(0);
+  }
+
+  function getLiquidationData(
+    Pool storage pool
+  ) 
+    private 
+    view
+    returns (uint256 winningPlayersCount, uint256 totalLiquidatedFunds) { 
+    
+    for (uint8 i = 0; i < pool.tiers.length; i++) {
+      Tier storage tier = pool.tiers[i];
+      if (tier.liquidationPrice < pool.assetPair.lowestPrice) {
+        winningPlayersCount += tier.players.length;
+        totalLiquidatedFunds += tier.buyInAmount * tier.players.length;
+      }
+    }
+
+    return (winningPlayersCount, totalLiquidatedFunds);
+  }
+
+  function distributeFundsToLiquidationWinners(
+    uint256 amountForEachWinner, 
+    uint256 poolId, 
+    Pool storage pool
+  ) 
+    private {
+    
+      for (uint8 i = 0; i < pool.tiers.length; i++) {
+        Tier storage tier = pool.tiers[i];
+        if (tier.liquidationPrice < pool.assetPair.lowestPrice) {
+          // TODO this could fail if we have unlimited number of players!
+          for (uint256 j = 0; j < tier.players.length; j++) {
+            poolLiquidationWinners[poolId][tier.players[j]] = amountForEachWinner; 
+          }
+        }
+      }
   }
 
   function getRandomNumber() private view returns (uint256) {
