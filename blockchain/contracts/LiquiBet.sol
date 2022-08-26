@@ -9,6 +9,7 @@ import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 interface IERC1155Token is IERC1155 {
     function mint(address account, uint256 id, uint256 amount, bytes memory data) external;
     function mintBatch(address to, uint256[] memory ids, uint256[] memory amounts, bytes memory data) external;
+    function getPoolInfo(address owner) external returns (uint256 poolId);
 }
 
 /// @title Staking provider interface
@@ -27,14 +28,14 @@ contract Liquibet is Ownable {
     uint256 lockPeriod;
     Tier[] tiers;
     StakingProvider stakingInfo;
-    uint256 lowestPrice;
     uint256 creatorFee;
     bool exists;
   }
 
   struct Tier {
     uint256 buyInAmount;
-    uint256 liquidationLevel;
+    uint256 liquidationPrice;
+    address[] players;
   }
 
   struct StakingProvider {
@@ -48,9 +49,10 @@ contract Liquibet is Ownable {
   struct AssetPair {
     bytes32 name;              // do we need name, can we get all the info from the chainlink contract?
     address priceFeedAddress;  // chainlink price feed data - is it in a form of a contract address?
+    uint256 lowestPrice;
   }
 
-  uint256 fee;
+  uint256 fee;  // fee should be large enough to cover contract operating expenses
   IERC1155Token public token;
   mapping(uint256 => Pool) public pools;
   uint256[] poolIds;
@@ -69,8 +71,10 @@ contract Liquibet is Ownable {
     address priceFeedAddress,
     address stakingContractAddress
     ) external onlyOwner {
-    
-    AssetPair memory assetPair = AssetPair(assetPairName, priceFeedAddress);
+
+    // get the current price for the asset pair as the lowestPrice of the pool
+    uint256 currentPrice = 20000; // TODO    
+    AssetPair memory assetPair = AssetPair(assetPairName, priceFeedAddress, currentPrice);
 
     // staking provider setup
     IStakingProvider stakingContract = IStakingProvider(stakingContractAddress);
@@ -78,22 +82,19 @@ contract Liquibet is Ownable {
     StakingProvider memory stakingProvider = StakingProvider(name, stakingContractAddress, asset, apy, 0);
 
     // tier levels hard-coded for now
-    Tier memory tier1 = Tier(50, 7);
-    Tier memory tier2 = Tier(100, 12);
-    Tier memory tier3 = Tier(500, 17);
-    Tier memory tier4 = Tier(1000, 25);
-    Tier memory tier5 = Tier(5000, 35);
-
-    // get the current price for the asset pair as the lowestPrice of the pool
-    uint256 currentPrice = 20000; // TODO
+    address[] memory emptyArr;
+    Tier memory tier1 = Tier(50, 7, emptyArr);
+    Tier memory tier2 = Tier(100, 12, emptyArr);
+    Tier memory tier3 = Tier(500, 17, emptyArr);
+    Tier memory tier4 = Tier(1000, 25, emptyArr);
+    Tier memory tier5 = Tier(5000, 35, emptyArr);
     
     Pool memory pool = Pool(
       assetPair, 
       startDateTime, 
       lockPeriod, 
       new Tier[](5), 
-      stakingProvider, 
-      currentPrice, 
+      stakingProvider,
       0,
       true
     );
@@ -134,15 +135,50 @@ contract Liquibet is Ownable {
     pool.stakingInfo.amount += msg.value - fee;
     pool.creatorFee += fee;
 
+    pool.tiers[tierId].players.push(msg.sender);
+
     // emit TokenMinted()
   }
 
   function resolution(uint256 poolId) external {
     // check that lockin period ended
+    Pool storage pool = pools[poolId];
+    require(block.timestamp > pool.startDateTime + pool.lockPeriod, "Pool locking period is still in effect");
     // withdraw funds from staking contract
-    // calculate the liqudations from price feed data:
-      // liquidate the pool tiers whose liquidationLevel if higer than the lowest price of the pool
-        // transfer the funds of lower tiers to the higher tiers
+    IStakingProvider stakingProvider = IStakingProvider(pool.stakingInfo.contractAddress);
+    stakingProvider.withdraw();
+    
+    // calculate the liqudation data    
+    uint256 winningPlayersCount;
+    uint256 totalLiquidatedFunds;
+    for (uint8 i = 0; i < pool.tiers.length; i++) {
+      Tier storage tier = pool.tiers[i];
+      if (tier.liquidationPrice < pool.assetPair.lowestPrice) {
+        winningPlayersCount += tier.players.length;
+        totalLiquidatedFunds += tier.buyInAmount * tier.players.length;
+      }
+    }
+    
+    // distribute the funds of lower tiers to the higher tiers
+    for (uint8 i = 0; i < pool.tiers.length; i++) {
+      Tier storage tier = pool.tiers[i];
+      if (tier.liquidationPrice < pool.assetPair.lowestPrice) {
+        // todo this could fail if we have unlimited number of players!
+        for (uint256 j = 0; j < tier.players.length; j++) {
+          poolLiquidationWinners[poolId][tier.players[j]] = totalLiquidatedFunds / winningPlayersCount; 
+        }
+      }
+    }
+  }
+
+  function withdraw() external {
+    (uint256 poolId) = token.getPoolInfo(msg.sender); // todo what if player is in multiple pools?
+    uint256 liquidationWinnings = poolLiquidationWinners[poolId][msg.sender];
+    uint256 lotteryWinnings = poolLotteryWinners[poolId][msg.sender];
+
+    require(liquidationWinnings + lotteryWinnings > 0, "You have no winnings to withdraw");
+
+    payable(msg.sender).transfer(liquidationWinnings + lotteryWinnings);
   }
 
   // stake pool funds in ETH
@@ -162,8 +198,8 @@ contract Liquibet is Ownable {
       Pool memory pool = pools[i];
       // get the price for the asset type from price feed
       // if the price is lower than the previous lowest price, store it
-      // if (pool.lowestPrice > currentPrice) {
-      //   pool.lowestPrice = currentPrice;
+      // if (pool.assetPair.lowestPrice > currentPrice) {
+      //   pool.assetPair.lowestPrice = currentPrice;
       // }
     }
   }
