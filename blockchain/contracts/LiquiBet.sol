@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 interface IERC1155Token is IERC1155 {
     function mint(address account, uint256 id, uint256 amount, bytes memory data) external;
     function mintBatch(address to, uint256[] memory ids, uint256[] memory amounts, bytes memory data) external;
-    function getPoolInfo(address owner) external returns (uint256 poolId);
+    function burn(uint256) external;
 }
 
 /// @title Staking provider interface
@@ -131,7 +131,8 @@ contract Liquibet is Ownable {
     require(msg.value >= amount * pool.tiers[tierId].buyInAmount + fee, "Not enough funds for chosen tier level");
 
     // mint token based on tier level and assign it (or msg.sender address?) to the pool
-    token.mint(msg.sender, tierId, amount, "");
+    uint256 tokenId = poolId * 10 + tierId; // tokenId = poolId_tierId
+    token.mint(msg.sender, tokenId, amount, "");
 
     // store pool ETH amount 
     pool.stakingInfo.amountStaked += msg.value - fee;
@@ -173,12 +174,14 @@ contract Liquibet is Ownable {
     }
   }
 
-  function withdraw() external {
-    (uint256 poolId) = token.getPoolInfo(msg.sender); // todo what if player is in multiple pools?
+  function withdraw(uint256 tokenId) external {
+    uint poolId = tokenId % 10;       // tokenId = poolId_tierId
     uint256 liquidationWinnings = poolLiquidationWinners[poolId][msg.sender];
     uint256 lotteryWinnings = poolLotteryWinners[poolId][msg.sender];
 
     require(liquidationWinnings + lotteryWinnings > 0, "You have no winnings to withdraw");
+
+    token.burn(tokenId);
 
     payable(msg.sender).transfer(liquidationWinnings + lotteryWinnings);
   }
