@@ -10,6 +10,8 @@ interface IERC1155Token is IERC1155 {
     function mint(address account, uint256 id, uint256 amount, bytes memory data) external;
     function mintBatch(address to, uint256[] memory ids, uint256[] memory amounts, bytes memory data) external;
     function burn(uint256) external;
+    function totalSupply(uint256 id) external returns (uint256);
+    function exists(uint256 id) external returns (bool);
 }
 
 /// @title Staking provider interface
@@ -23,10 +25,10 @@ interface IStakingProvider {
 contract Liquibet is Ownable { 
 
   struct Pool {
+    uint256 poolId;
     AssetPair assetPair;
     uint256 startDateTime;
     uint256 lockPeriod;
-    Tier[] tiers;
     StakingProvider stakingInfo;
     uint256 creatorFee;
     uint256 totalPlayersCount;
@@ -36,7 +38,6 @@ contract Liquibet is Ownable {
   struct Tier {
     uint256 buyInAmount;
     uint256 liquidationPrice;
-    address[] players;
   }
 
   struct StakingProvider {
@@ -55,9 +56,11 @@ contract Liquibet is Ownable {
 
   uint256 fee;  // fee should be large enough to cover contract operating expenses
   IERC1155Token public token;
-  mapping(uint256 => Pool) public pools;
+  mapping(uint256 => Pool) pools;
   uint256[] poolIds;
-  mapping(uint256 => mapping(address => uint256)) poolLiquidationWinners; // poolId => mapping(playerAddres => amount)
+  mapping(uint256 => Tier[]) tiers;    // poolId => tiers
+  mapping(uint256 => mapping(uint256 => address[])) tierPlayers;    // poolId => (tierId => player addresses)
+  mapping(uint256 => uint256) poolLiquidationsPrize;         // poolId => prize for each winning player
   mapping(uint256 => mapping(address => uint256)) poolLotteryWinners;     // poolId => mapping(playerAddres => amount)
 
   constructor(address _token, uint256 _fee) {
@@ -82,39 +85,33 @@ contract Liquibet is Ownable {
     (bytes32 name, bytes32 asset, uint256 apy) = stakingContract.getStakingInfo();
     StakingProvider memory stakingProvider = StakingProvider(name, stakingContractAddress, asset, apy, 0);
 
+    // pool setup
+    Pool memory pool = Pool({
+      poolId: poolIds.length,
+      assetPair: assetPair, 
+      startDateTime: startDateTime, 
+      lockPeriod: lockPeriod, 
+      stakingInfo: stakingProvider,
+      creatorFee: 0,
+      totalPlayersCount: 0,
+      exists: true
+    });
+
+    uint256 newPoolId = poolIds.length;
+    addNewPool(newPoolId, pool);
+    
     // tier levels hard-coded for now
-    address[] memory emptyArr;
-    Tier memory tier1 = Tier(50, 7, emptyArr);
-    Tier memory tier2 = Tier(100, 12, emptyArr);
-    Tier memory tier3 = Tier(500, 17, emptyArr);
-    Tier memory tier4 = Tier(1000, 25, emptyArr);
-    Tier memory tier5 = Tier(5000, 35, emptyArr);
-    
-    Pool memory pool = Pool(
-      assetPair, 
-      startDateTime, 
-      lockPeriod, 
-      new Tier[](5), 
-      stakingProvider,
-      0,
-      0,
-      true
-    );
-    
-    pool.tiers[0] = tier1;
-    pool.tiers[1] = tier2;
-    pool.tiers[2] = tier3;
-    pool.tiers[3] = tier4;
-    pool.tiers[4] = tier5;
-
-    // add the pool to the pools array / mapping
-    addNewPool(poolIds.length, pool);
-
-    // emit PoolCreatedEvent
+    tiers[newPoolId][0] = Tier(50, 7);
+    tiers[newPoolId][1] = Tier(100, 12);
+    tiers[newPoolId][2] = Tier(500, 17);
+    tiers[newPoolId][3] = Tier(1000, 25);
+    tiers[newPoolId][4] = Tier(5000, 35);
 
     // setup a keeper that calls the stakePoolFunds function with poolId on the pool startDateTime
 
     // setup a keeper that calls the resolution function with poolId on the end of the lockInPeriod
+    
+    // emit PoolCreatedEvent
   }
   
   function buyIn(uint256 poolId, uint8 tierId, uint256 amount) external payable {
@@ -126,19 +123,19 @@ contract Liquibet is Ownable {
     // check if buy-in period is still in effect
     require(block.timestamp <= pool.startDateTime, "Pool is locked");
     // check is tier exists
-    require(tierId < pool.tiers.length, "Tier doesn't exist in the given pool");
+    require(tierId < tiers[poolId].length, "Tier doesn't exist in the given pool");
     // check msg.value >= necessary tier level amount for pool + fee
-    require(msg.value >= amount * pool.tiers[tierId].buyInAmount + fee, "Not enough funds for chosen tier level");
+    require(msg.value >= amount * tiers[poolId][tierId].buyInAmount + fee, "Not enough funds for chosen tier level");
 
     // mint token based on tier level and assign it (or msg.sender address?) to the pool
-    uint256 tokenId = poolId * 10 + tierId; // tokenId = poolId_tierId
+    uint256 tokenId = getTokenId(poolId, tierId); // tokenId = poolId_tierId
     token.mint(msg.sender, tokenId, amount, "");
 
     // store pool ETH amount 
     pool.stakingInfo.amountStaked += msg.value - fee;
     pool.creatorFee += fee;
 
-    pool.tiers[tierId].players.push(msg.sender);
+    tierPlayers[poolId][tierId].push(msg.sender);
     pool.totalPlayersCount++;
 
     // emit TokenMinted()
@@ -156,28 +153,29 @@ contract Liquibet is Ownable {
     // lottery
     uint256 lotteryPrize = totalAmount - pool.stakingInfo.amountStaked;
     if (lotteryPrize > 0) {
-      address winner = getLotteryWinner(pool);
+      address winner = getLotteryWinner(poolId, pool.totalPlayersCount);
       if (winner != address(0)) {
         poolLotteryWinners[poolId][winner] = lotteryPrize;
       }
     }
 
     // liquidations
-    (uint256 winningPlayersCount, uint256 totalLiquidatedFunds) = getLiquidationData(pool);
+    poolLiquidationsPrize[poolId] = getLiquidationPrize(poolId, pool.assetPair.lowestPrice);
 
     // TODO if winningPlayersCount = 0 -> funds distributed to other pools and pool creator
-    
-    if (winningPlayersCount > 0) {
-      // distribute the funds of lower tiers to the higher tiers
-      uint256 amountForEachWinner = totalLiquidatedFunds / winningPlayersCount;
-      distributeFundsToLiquidationWinners(amountForEachWinner, poolId, pool);
-    }
   }
 
   function withdraw(uint256 tokenId) external {
-    uint poolId = tokenId % 10;       // tokenId = poolId_tierId
-    uint256 liquidationWinnings = poolLiquidationWinners[poolId][msg.sender];
+    require(token.exists(tokenId), "Token with given id doesn't exist");
+
+    uint poolId = getPoolId(tokenId);       
+    uint tierId = getTierId(tokenId);       
+
     uint256 lotteryWinnings = poolLotteryWinners[poolId][msg.sender];
+
+    Pool memory pool = pools[poolId];
+    Tier memory tier = tiers[poolId][tierId];
+    uint256 liquidationWinnings = isLiquidated(tier.liquidationPrice, pool.assetPair.lowestPrice) ? 0 : poolLiquidationsPrize[poolId];
 
     require(liquidationWinnings + lotteryWinnings > 0, "You have no winnings to withdraw");
 
@@ -209,14 +207,13 @@ contract Liquibet is Ownable {
     }
   }
 
-  function getLotteryWinner(Pool storage pool) private view returns (address winner) {
+  function getLotteryWinner(uint256 poolId, uint256 totalPlayersCount) private view returns (address winner) {
     
-    address[] memory allPlayers = new address[](pool.totalPlayersCount);
+    address[] memory allPlayers = new address[](totalPlayersCount);
     uint256 arrIndex;
-    for (uint8 i = 0; i < pool.tiers.length; i++) {
-      Tier memory tier = pool.tiers[i];
-      for (uint256 j = 0; j < tier.players.length; j++) { 
-        allPlayers[arrIndex] = tier.players[j];
+    for (uint8 i = 0; i < tiers[poolId].length; i++) {
+      for (uint256 j = 0; j < tierPlayers[poolId][i].length; j++) { 
+        allPlayers[arrIndex] = tierPlayers[poolId][i][j];
         arrIndex++;
       }
     }
@@ -229,40 +226,27 @@ contract Liquibet is Ownable {
     return address(0);
   }
 
-  function getLiquidationData(
-    Pool storage pool
-  ) 
-    private 
-    view
-    returns (uint256 winningPlayersCount, uint256 totalLiquidatedFunds) { 
+  function getLiquidationPrize(uint256 poolId, uint256 poolAssetLowestPrice) private returns (uint256) { 
     
-    for (uint8 i = 0; i < pool.tiers.length; i++) {
-      Tier storage tier = pool.tiers[i];
-      if (tier.liquidationPrice < pool.assetPair.lowestPrice) {
-        winningPlayersCount += tier.players.length;
-        totalLiquidatedFunds += tier.buyInAmount * tier.players.length;
+    uint256 winningPlayersCount;
+    uint256 totalLiquidatedFunds;
+    
+    for (uint8 i = 0; i < tiers[poolId].length; i++) {
+      Tier memory tier = tiers[poolId][i];
+      uint256 tokenId = getTokenId(poolId, i);
+
+      if (isLiquidated(tier.liquidationPrice, poolAssetLowestPrice)) {
+        uint256 tokenSupply = token.totalSupply(tokenId);
+        winningPlayersCount += tokenSupply;
+        totalLiquidatedFunds += tier.buyInAmount * tokenSupply;
       }
     }
 
-    return (winningPlayersCount, totalLiquidatedFunds);
-  }
+    if (winningPlayersCount > 0) {
+      return totalLiquidatedFunds / winningPlayersCount;
+    }
 
-  function distributeFundsToLiquidationWinners(
-    uint256 amountForEachWinner, 
-    uint256 poolId, 
-    Pool storage pool
-  ) 
-    private {
-    
-      for (uint8 i = 0; i < pool.tiers.length; i++) {
-        Tier storage tier = pool.tiers[i];
-        if (tier.liquidationPrice < pool.assetPair.lowestPrice) {
-          // TODO this could fail if we have unlimited number of players!
-          for (uint256 j = 0; j < tier.players.length; j++) {
-            poolLiquidationWinners[poolId][tier.players[j]] = amountForEachWinner; 
-          }
-        }
-      }
+    return 0;
   }
 
   function getRandomNumber() private view returns (uint256) {
@@ -274,4 +258,24 @@ contract Liquibet is Ownable {
     poolIds.push(newPoolId);
     pools[newPoolId] = pool;
   } 
+
+  ///@dev tokeinId is formed from poolid and tokenId -> tokenId = poolId_tierId
+  function getTokenId(uint256 poolId, uint8 tierId) private pure returns (uint256) {
+    return poolId * 10 + tierId;
+  }
+  
+  ///@dev poolId is tokenId with last digit removed
+  function getPoolId(uint256 tokenId) private pure returns (uint256) {
+    return tokenId / 10;
+  }  
+
+  ///@dev tierId is last digit in tokenId
+  function getTierId(uint256 tokenId) private pure returns (uint256) {
+    return tokenId % 10;
+  }
+
+  ///@notice exact liquidation threshold logic
+  function isLiquidated(uint256 tierLiquidationPrice, uint256 assetLowestPrice) private pure returns (bool) {
+    return tierLiquidationPrice < assetLowestPrice;
+  }  
 }
