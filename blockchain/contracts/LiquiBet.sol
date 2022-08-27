@@ -3,8 +3,9 @@ pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
 
-/// @title IERC1155 interface
+/// @title IERC1155 token interface
 /// @dev Used to call the necessary functions from the token address 
 interface IERC1155Token is IERC1155 {
     function mint(address account, uint256 id, uint256 amount, bytes memory data) external;
@@ -22,7 +23,8 @@ interface IStakingProvider {
     function withdraw() external returns (uint256 amount);
 }
 
-contract Liquibet is Ownable { 
+contract Liquibet is AccessControl { 
+  bytes32 public constant KEEPER_ROLE = keccak256("KEEPER_ROLE");
 
   struct Pool {
     uint256 poolId;
@@ -60,12 +62,14 @@ contract Liquibet is Ownable {
   uint256[] poolIds;
   mapping(uint256 => Tier[]) tiers;    // poolId => tiers
   mapping(uint256 => mapping(uint256 => address[])) tierPlayers;    // poolId => (tierId => player addresses)
-  mapping(uint256 => uint256) poolLiquidationsPrize;         // poolId => prize for each winning player
+  mapping(uint256 => uint256) poolLiquidationPrizes;         // poolId => prize for each winning player
   mapping(uint256 => mapping(address => uint256)) poolLotteryWinners;     // poolId => mapping(playerAddres => amount)
 
   constructor(address _token, uint256 _fee) {
     token = IERC1155Token(_token);
     fee = _fee;
+    
+    _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
   }
 
   function createPool(
@@ -73,8 +77,17 @@ contract Liquibet is Ownable {
     uint256 lockPeriod,
     bytes32 assetPairName,
     address priceFeedAddress,
-    address stakingContractAddress
-    ) external onlyOwner {
+    address stakingContractAddress,
+    address keeperAddress
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+
+    require(startDateTime > block.timestamp + 2 days, "Minimal buyin period is two days");
+    require(assetPairName != "", "Asset pair name is required");
+    require(priceFeedAddress != address(0), "Price feed address is required");
+    require(stakingContractAddress != address(0), "Staking contract address is required");
+    require(keeperAddress != address(0), "Keeper address is required");
+
+    _grantRole(KEEPER_ROLE, keeperAddress);
 
     // get the current price for the asset pair as the lowestPrice of the pool
     uint256 currentPrice = 20000; // TODO    
@@ -108,26 +121,26 @@ contract Liquibet is Ownable {
     tiers[newPoolId][4] = Tier(5000, 35);
 
     // setup a keeper that calls the stakePoolFunds function with poolId on the pool startDateTime
-
     // setup a keeper that calls the resolution function with poolId on the end of the lockInPeriod
-    
+    // setup periodical keeper calls to update lowestPrice of the pools assets
+
     // emit PoolCreatedEvent
   }
   
   function buyIn(uint256 poolId, uint8 tierId, uint256 amount) external payable {
     
     require(amount > 0, "Mint amount must be larger than zero");
-    // check if pool and tier exist
+    // check if pool exists
     Pool storage pool = pools[poolId];
     require(pool.exists, "Pool is inactive");
     // check if buy-in period is still in effect
     require(block.timestamp <= pool.startDateTime, "Pool is locked");
-    // check is tier exists
+    // check if tier exists
     require(tierId < tiers[poolId].length, "Tier doesn't exist in the given pool");
     // check msg.value >= necessary tier level amount for pool + fee
     require(msg.value >= amount * tiers[poolId][tierId].buyInAmount + fee, "Not enough funds for chosen tier level");
 
-    // mint token based on tier level and assign it (or msg.sender address?) to the pool
+    // mint token based on pool and tier
     uint256 tokenId = getTokenId(poolId, tierId); // tokenId = poolId_tierId
     token.mint(msg.sender, tokenId, amount, "");
 
@@ -141,7 +154,7 @@ contract Liquibet is Ownable {
     // emit TokenMinted()
   }
 
-  function resolution(uint256 poolId) external {
+  function resolution(uint256 poolId) external onlyRole(KEEPER_ROLE) {
     // check that lockin period ended
     Pool storage pool = pools[poolId];
     require(block.timestamp > pool.startDateTime + pool.lockPeriod, "Pool locking period is still in effect");
@@ -151,7 +164,7 @@ contract Liquibet is Ownable {
     uint256 totalAmount = stakingProvider.withdraw();
 
     // lottery
-    uint256 lotteryPrize = totalAmount - pool.stakingInfo.amountStaked;
+    uint256 lotteryPrize = safeSubtract(totalAmount, pool.stakingInfo.amountStaked);
     if (lotteryPrize > 0) {
       address winner = getLotteryWinner(poolId, pool.totalPlayersCount);
       if (winner != address(0)) {
@@ -160,11 +173,34 @@ contract Liquibet is Ownable {
     }
 
     // liquidations
-    poolLiquidationsPrize[poolId] = getLiquidationPrize(poolId, pool.assetPair.lowestPrice);
+    poolLiquidationPrizes[poolId] = getLiquidationPrize(poolId, pool.assetPair.lowestPrice);
 
     // TODO if winningPlayersCount = 0 -> funds distributed to other pools and pool creator
   }
 
+  // stake pool funds in ETH
+  function stakePoolFunds(uint256 poolId) external onlyRole(KEEPER_ROLE) {
+    // get the pool by id
+    Pool memory pool = pools[poolId];
+    // get the staking provider info from the pool
+    IStakingProvider stakingProvider = IStakingProvider(pool.stakingInfo.contractAddress);
+    // call the staking provider stake function
+    stakingProvider.stake{ value: pool.stakingInfo.amountStaked }();
+  }
+
+  // get the price data from chainlink price feed and store it
+  function getPriceFeedData() external onlyRole(KEEPER_ROLE) {
+    // foreach active pool get the asset type
+    for (uint256 i = 0; i < poolIds.length; i++) {
+      Pool memory pool = pools[i];
+      // get the price for the asset type from price feed
+      // if the price is lower than the previous lowest price, store it
+      // if (pool.assetPair.lowestPrice > currentPrice) {
+      //   pool.assetPair.lowestPrice = currentPrice;
+      // }
+    }
+  }
+  
   function withdraw(uint256 tokenId) external {
     require(token.exists(tokenId), "Token with given id doesn't exist");
 
@@ -175,36 +211,13 @@ contract Liquibet is Ownable {
 
     Pool memory pool = pools[poolId];
     Tier memory tier = tiers[poolId][tierId];
-    uint256 liquidationWinnings = isLiquidated(tier.liquidationPrice, pool.assetPair.lowestPrice) ? 0 : poolLiquidationsPrize[poolId];
+    uint256 liquidationWinnings = isLiquidated(tier.liquidationPrice, pool.assetPair.lowestPrice) ? 0 : poolLiquidationPrizes[poolId];
 
     require(liquidationWinnings + lotteryWinnings > 0, "You have no winnings to withdraw");
 
     token.burn(tokenId);
 
     payable(msg.sender).transfer(liquidationWinnings + lotteryWinnings);
-  }
-
-  // stake pool funds in ETH
-  function stakePoolFunds(uint256 poolId) external {
-    // get the pool by id
-    Pool memory pool = pools[poolId];
-    // get the staking provider info from the pool
-    IStakingProvider stakingProvider = IStakingProvider(pool.stakingInfo.contractAddress);
-    // call the staking provider stake function
-    stakingProvider.stake{ value: pool.stakingInfo.amountStaked }();
-  }
-
-  // get the price data from chainlink price feed and store it
-  function getPriceFeedData() private {
-    // foreach active pool get the asset type
-    for (uint256 i = 0; i < poolIds.length; i++) {
-      Pool memory pool = pools[i];
-      // get the price for the asset type from price feed
-      // if the price is lower than the previous lowest price, store it
-      // if (pool.assetPair.lowestPrice > currentPrice) {
-      //   pool.assetPair.lowestPrice = currentPrice;
-      // }
-    }
   }
 
   function getLotteryWinner(uint256 poolId, uint256 totalPlayersCount) private view returns (address winner) {
@@ -274,8 +287,13 @@ contract Liquibet is Ownable {
     return tokenId % 10;
   }
 
-  ///@notice exact liquidation threshold logic
+  ///@notice liquidation threshold logic
   function isLiquidated(uint256 tierLiquidationPrice, uint256 assetLowestPrice) private pure returns (bool) {
     return tierLiquidationPrice < assetLowestPrice;
   }  
+
+  ///@dev subtract without throwing error on negative overflow
+  function safeSubtract(uint256 minuend, uint256 subtrahend) private pure returns(uint256) {
+    return subtrahend > minuend ? 0 : minuend - subtrahend;
+  }
 }
