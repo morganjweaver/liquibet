@@ -6,10 +6,11 @@ import "hardhat/console.sol";
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Burnable.sol";
+import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
 import "@chainlink/contracts/src/v0.8/KeeperCompatible.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
-contract SFT is ERC1155, Ownable, ERC1155Burnable, KeeperCompatibleInterface {
+contract SFT is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, KeeperCompatibleInterface {
     uint8 public constant TIER_1 = 1; // 10% fluctuation
     uint8 public constant TIER_2 = 2; // 17% fluctuaton
     uint8 public constant TIER_3 = 3; // 25% fluctuation
@@ -179,5 +180,18 @@ contract SFT is ERC1155, Ownable, ERC1155Burnable, KeeperCompatibleInterface {
             console.log(" INTERVAL NOT UP!");
             return;
         }
+    }
+
+    function _beforeTokenTransfer(
+        address operator, 
+        address from, 
+        address to, 
+        uint256[] memory ids, 
+        uint256[] memory amounts, 
+        bytes memory data
+    ) 
+        internal 
+        override (ERC1155, ERC1155Supply) {
+        ERC1155Supply._beforeTokenTransfer(operator, from, to, ids, amounts, data);
     }
 }
