@@ -39,8 +39,7 @@ contract Staking is KeeperCompatibleInterface, IStakingProvider {
         emit Deposit(msg.value, block.timestamp);
     }
 
-    // For testing/dev/demo purposes
-    function withdraw() public onlyOwner returns (uint256 amount){
+    function withdraw() public returns (uint256 amount){
         require(stakingCustomers[msg.sender].when != 0, "Customer has no funds staked");
         uint256 returnAmount = stakingCustomers[msg.sender].amountDeposited * interest_percent + 100 / 100;
         require(address(this).balance > returnAmount, 
