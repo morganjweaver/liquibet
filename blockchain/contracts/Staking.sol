@@ -38,6 +38,7 @@ contract Staking is KeeperCompatibleInterface {
         stakingCustomers[msg.sender] = StakingDetails(block.timestamp, msg.value);
         emit Deposit(msg.value, block.timestamp);
     }
+
     // For testing/dev/demo purposes
     function withdraw() public onlyOwner {
         require(stakingCustomers[msg.sender].when != 0, "Customer has no funds staked");
@@ -93,6 +94,8 @@ contract Staking is KeeperCompatibleInterface {
         }
 
     }
+
+    receive() external payable {}
 
 
 }
