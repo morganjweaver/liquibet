@@ -2,26 +2,9 @@
 pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
-
-/// @title IERC1155 token interface
-/// @dev Used to call the necessary functions from the token address 
-interface IERC1155Token is IERC1155 {
-    function mint(address account, uint256 id, uint256 amount, bytes memory data) external;
-    function mintBatch(address to, uint256[] memory ids, uint256[] memory amounts, bytes memory data) external;
-    function burn(uint256) external;
-    function totalSupply(uint256 id) external returns (uint256);
-    function exists(uint256 id) external returns (bool);
-}
-
-/// @title Staking provider interface
-/// @dev Used to call the functions from the staking provider 
-interface IStakingProvider {
-    function getStakingInfo() external returns (bytes32 name, bytes32 asset, uint256 apy);
-    function stake() external payable;
-    function withdraw() external returns (uint256 amount);
-}
+import "./interfaces/IERC1155Token.sol";
+import "./interfaces/IStakingProvider.sol";
 
 contract Liquibet is AccessControl { 
   bytes32 public constant KEEPER_ROLE = keccak256("KEEPER_ROLE");

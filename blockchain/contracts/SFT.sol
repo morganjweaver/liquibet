@@ -9,6 +9,7 @@ import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Burnable.sol";
 import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
 import "@chainlink/contracts/src/v0.8/KeeperCompatible.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+import "./interfaces/IERC1155Token.sol";
 
 contract SFT is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, KeeperCompatibleInterface {
     uint8 public constant TIER_1 = 1; // 10% fluctuation
@@ -57,8 +58,12 @@ contract SFT is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, KeeperCompatib
         return _uris[id];
     }
 
-    function buySFT(uint256 id) public {
-        _mint(msg.sender, id, 1, "");
+    function mint(uint256 id, uint256 amount, bytes memory data) public {
+        _mint(msg.sender, id, amount, data);
+    }
+
+    function mintBatch(address to, uint256[] memory ids, uint256[] memory amounts, bytes memory data) public {
+        _mintBatch(to, ids, amounts, data);
     }
 
     function setTokenUri(uint256 id, string memory newUri) public {
