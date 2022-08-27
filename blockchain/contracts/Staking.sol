@@ -10,20 +10,23 @@ contract Staking is KeeperCompatibleInterface {
 
     address payable public admin;
     uint256 interest_percent = 10;
-    uint stakingIntervalInHours = 26 * 24; // 26-day staking period * 24 hrs/day
-
+    // Example: 26 * 24 * 60 for 26-day staking period * 24 hrs/day * 60 min/hr
+    uint stakingIntervalInMinutes; 
+    
     struct StakingDetails {
         uint when;
         uint256 amountDeposited;
     }
+
     address[] stakingAddresses;
     mapping(address => StakingDetails) stakingCustomers;
 
     event Deposit(uint amount, uint when);
     event Withdrawal(uint amount, uint when);
 
-    constructor() {
+    constructor(uint stakingIntervalMinutes) {
         admin = payable(msg.sender);
+        stakingIntervalInMinutes = stakingIntervalMinutes;
     }
 
     modifier onlyOwner() {
@@ -35,18 +38,18 @@ contract Staking is KeeperCompatibleInterface {
         stakingCustomers[msg.sender] = StakingDetails(block.timestamp, msg.value);
         emit Deposit(msg.value, block.timestamp);
     }
-
-    function withdraw() public {
+    // For testing/dev/demo purposes
+    function withdraw() public onlyOwner {
         require(stakingCustomers[msg.sender].when != 0, "Customer has no funds staked");
         uint256 returnAmount = stakingCustomers[msg.sender].amountDeposited * interest_percent + 100 / 100;
         require(address(this).balance > returnAmount, 
         "Staking contract has insufficient funds for repayment!");
-        
         (bool result, bytes memory returnData) = (msg.sender).call{
             value: returnAmount}("");
         require(result == true, "Failure to withdraw ether");
     }
 
+    // For Chainlink Keeper to call
     function returnDepositWithInterest(address staker) internal {
         require(stakingCustomers[staker].when != 0, "Customer has no funds staked");
         uint256 returnAmount = stakingCustomers[staker].amountDeposited * interest_percent + 100 / 100;
@@ -69,21 +72,22 @@ contract Staking is KeeperCompatibleInterface {
     function checkUpkeep(bytes calldata /* checkData */) external view override returns (bool upkeepNeeded, bytes memory /* performData */) {
         uint passed;
         uint currentTimestamp = block.timestamp;
+
         for (uint256 i = 0; i < stakingAddresses.length; i++ ) {
-            passed = (currentTimestamp = stakingCustomers[stakingAddresses[i]].when) / 60 / 60;
-            if (passed >= stakingIntervalInHours){
+            passed = (currentTimestamp = stakingCustomers[stakingAddresses[i]].when) / 60;
+            if (passed >= stakingIntervalInMinutes){
+                // Defaults to 0/false, I think?  Only need to set if true?
                 upkeepNeeded = true;
             }
         }
-        upkeepNeeded = false;
     }
     
-    // Checks the interval of each staking address and sends back to staker if 26 days (in hours) has elapsed
+    // Checks the interval of each staking address and sends back to staker if 26 days (in Minutes) has elapsed
     function performUpkeep(bytes calldata /* performData */) external override {
         uint currentTimestamp = block.timestamp;
         for (uint256 i = 0; i < stakingAddresses.length; i++ ) {
-            uint passed = (currentTimestamp = stakingCustomers[stakingAddresses[i]].when) / 60 / 60;
-            if (passed >= stakingIntervalInHours){
+            uint passed = (currentTimestamp = stakingCustomers[stakingAddresses[i]].when) / 60;
+            if (passed >= stakingIntervalInMinutes){
                 returnDepositWithInterest(stakingAddresses[i]);
             }
         }
