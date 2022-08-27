@@ -42,7 +42,7 @@ contract Liquibet is AccessControl {
     uint256 lowestPrice;
   }
 
-  uint256 fee;  // fee should be large enough to cover contract operating expenses
+  uint256 public fee;  // fee should be large enough to cover contract operating expenses
   IERC1155Token public token;
   mapping(uint256 => Pool) pools;
   uint256[] poolIds;
