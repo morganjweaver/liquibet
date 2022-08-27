@@ -31,7 +31,7 @@ contract Liquibet is AccessControl {
     AssetPair assetPair;
     uint256 startDateTime;
     uint256 lockPeriod;
-    StakingProvider stakingInfo;
+    StakingInfo stakingInfo;
     uint256 creatorFee;
     uint256 totalPlayersCount;
     bool exists;
@@ -42,7 +42,7 @@ contract Liquibet is AccessControl {
     uint256 liquidationPrice;
   }
 
-  struct StakingProvider {
+  struct StakingInfo {
     bytes32 name;
     address contractAddress;
     bytes32 asset;
@@ -94,9 +94,7 @@ contract Liquibet is AccessControl {
     AssetPair memory assetPair = AssetPair(assetPairName, priceFeedAddress, currentPrice);
 
     // staking provider setup
-    IStakingProvider stakingContract = IStakingProvider(stakingContractAddress);
-    (bytes32 name, bytes32 asset, uint256 apy) = stakingContract.getStakingInfo();
-    StakingProvider memory stakingProvider = StakingProvider(name, stakingContractAddress, asset, apy, 0);
+    StakingInfo memory stakingInfo = setupStaking(stakingContractAddress);
 
     // pool setup
     Pool memory pool = Pool({
@@ -104,7 +102,7 @@ contract Liquibet is AccessControl {
       assetPair: assetPair, 
       startDateTime: startDateTime, 
       lockPeriod: lockPeriod, 
-      stakingInfo: stakingProvider,
+      stakingInfo: stakingInfo,
       creatorFee: 0,
       totalPlayersCount: 0,
       exists: true
@@ -237,6 +235,13 @@ contract Liquibet is AccessControl {
     }
 
     return address(0);
+  }
+
+  function setupStaking(address stakingContractAddress) private returns (StakingInfo memory) {
+    
+    IStakingProvider stakingContract = IStakingProvider(stakingContractAddress);
+    (bytes32 name, bytes32 asset, uint256 apy) = stakingContract.getStakingInfo();
+    return StakingInfo(name, stakingContractAddress, asset, apy, 0);
   }
 
   function getLiquidationPrize(uint256 poolId, uint256 poolAssetLowestPrice) private returns (uint256) { 
