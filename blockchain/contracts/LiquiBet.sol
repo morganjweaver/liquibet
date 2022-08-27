@@ -1,11 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 
+import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+import "@chainlink/contracts/src/v0.8/KeeperCompatible.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "./interfaces/IERC1155Token.sol";
 import "./interfaces/IStakingProvider.sol";
 
+///@title Liquibet gambling / lottery contract
 contract Liquibet is AccessControl { 
   bytes32 public constant KEEPER_ROLE = keccak256("KEEPER_ROLE");
 
@@ -55,6 +58,8 @@ contract Liquibet is AccessControl {
     _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
   }
 
+  ///@notice create a new pool
+  ///@dev tier levels are hard-coded for now
   function createPool(
     uint256 startDateTime, 
     uint256 lockPeriod,
@@ -71,7 +76,7 @@ contract Liquibet is AccessControl {
     require(keeperAddress != address(0), "Keeper address is required");
 
     _grantRole(KEEPER_ROLE, keeperAddress);
-
+    
     // get the current price for the asset pair as the lowestPrice of the pool
     uint256 currentPrice = 20000; // TODO    
     AssetPair memory assetPair = AssetPair(assetPairName, priceFeedAddress, currentPrice);
@@ -108,6 +113,7 @@ contract Liquibet is AccessControl {
     // emit PoolCreatedEvent
   }
   
+  ///@notice buy a spot in a pool, mints a sft token for a caller
   function buyIn(uint256 poolId, uint8 tierId, uint256 amount) external payable {
     
     require(amount > 0, "Mint amount must be larger than zero");
@@ -135,10 +141,12 @@ contract Liquibet is AccessControl {
     // emit TokenMinted()
   }
 
+  ///@notice performs the contract resolution phase - withdraws staked funds, performs lottery and determines liqudation winners
+  ///@dev if winningPlayersCount = 0 (all players got liquidated) case not handled
   function resolution(uint256 poolId) external onlyRole(KEEPER_ROLE) {
     // check that lockin period ended
     Pool storage pool = pools[poolId];
-    require(block.timestamp > pool.startDateTime + pool.lockPeriod, "Pool locking period is still in effect");
+    require(isPoolLocked(pool.startDateTime, pool.lockPeriod), "Pool locking period is still in effect");
     
     // withdraw funds from staking contract
     IStakingProvider stakingProvider = IStakingProvider(pool.stakingInfo.contractAddress);
@@ -159,29 +167,34 @@ contract Liquibet is AccessControl {
     // TODO if winningPlayersCount = 0 -> funds distributed to other pools and pool creator
   }
 
-  // stake pool funds in ETH
+  ///@notice stake pool funds
+  ///@dev works only for ETH
   function stakePoolFunds(uint256 poolId) external onlyRole(KEEPER_ROLE) {
-    // get the pool by id
     Pool memory pool = pools[poolId];
-    // get the staking provider info from the pool
     IStakingProvider stakingProvider = IStakingProvider(pool.stakingInfo.contractAddress);
-    // call the staking provider stake function
     stakingProvider.stake{ value: pool.stakingInfo.amountStaked }();
   }
 
-  // get the price data from chainlink price feed and store it
-  function getPriceFeedData() external onlyRole(KEEPER_ROLE) {
+  ///@notice gets the price data from chainlink price feed
+  ///@dev does not deal with asset decimals - TODO
+  function getPriceFeedData() external view onlyRole(KEEPER_ROLE) {
     // foreach active pool get the asset type
     for (uint256 i = 0; i < poolIds.length; i++) {
       Pool memory pool = pools[i];
-      // get the price for the asset type from price feed
-      // if the price is lower than the previous lowest price, store it
-      // if (pool.assetPair.lowestPrice > currentPrice) {
-      //   pool.assetPair.lowestPrice = currentPrice;
-      // }
+      
+      if (isPoolLocked(pool.startDateTime, pool.lockPeriod)) {
+        continue;
+      }
+
+      uint256 currentPrice = getLatestPrice(pool.assetPair.priceFeedAddress);
+      if (pool.assetPair.lowestPrice > currentPrice) {
+        pool.assetPair.lowestPrice = currentPrice;
+      }
     }
   }
   
+  ///@notice withdraws funds from lottery and liquidation winnings and burns the sft
+  ///@dev burns only 1 sft from a user - if user hase more sfts from the same pool they cannot be used to withdraw winnings again
   function withdraw(uint256 tokenId) external {
     require(token.exists(tokenId), "Token with given id doesn't exist");
 
@@ -196,11 +209,14 @@ contract Liquibet is AccessControl {
 
     require(liquidationWinnings + lotteryWinnings > 0, "You have no winnings to withdraw");
 
-    token.burn(tokenId);
+    poolLotteryWinners[poolId][msg.sender] = 0;
+    token.burn(msg.sender, tokenId, 1);  // TODO find way to burn all the sfts of a user?
 
     payable(msg.sender).transfer(liquidationWinnings + lotteryWinnings);
   }
 
+  ///@notice get s address of the lottery winner
+  ///@dev if there is no winner (all the tiers got liquidated), returns zero address (address(0))
   function getLotteryWinner(uint256 poolId, uint256 totalPlayersCount) private view returns (address winner) {
     
     address[] memory allPlayers = new address[](totalPlayersCount);
@@ -283,5 +299,18 @@ contract Liquibet is AccessControl {
   ///@dev subtract without throwing error on negative overflow
   function safeSubtract(uint256 minuend, uint256 subtrahend) private pure returns(uint256) {
     return subtrahend > minuend ? 0 : minuend - subtrahend;
+  }
+  
+  function isPoolLocked(uint256 startDateTime, uint256 lockPeriod) private view returns(bool) {
+    return block.timestamp > startDateTime + lockPeriod;
+  }
+
+  ///@notice get the latest price from chainling price feed
+  ///@dev if lastest price is negative (possible?) returns 0
+  function getLatestPrice(address priceFeedAddress) private view returns (uint256) {
+      AggregatorV3Interface pricefeed = AggregatorV3Interface(priceFeedAddress);
+      (, int256 currentPrice, , , ) = pricefeed.latestRoundData();
+
+      return currentPrice < 0 ? 0 : uint256(currentPrice);
   }
 }
