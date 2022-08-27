@@ -22,7 +22,7 @@ async function main() {
   console.log(`Set Token Uri ...`);
   const tx = await tokenContract.setTokenUri(
     1,
-    "https://ipfs.io/ipfs/QmTppFVUw434kCXN393qAKzhZAvTiywB1hv1xKa1xQxPEo/0.json"
+    "https://liquibet.infura-ipfs.io/ipfs/QmTCDNmaz2UGH5e8eRxo5uGK1sx1SEwehvTTiHkMoNMzFk",
   );
   console.log("Awaiting confirmations");
   await tx.wait();

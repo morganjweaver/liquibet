@@ -29,12 +29,12 @@ contract SFT is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, KeeperCompatib
 
     // id:0 means liquidated, id:5 is healthiest SFT
     string[] healthUrisIpfs = [
-        "https://ipfs.io/ipfs/QmTppFVUw434kCXN393qAKzhZAvTiywB1hv1xKa1xQxPEo/0.json",
-        "https://ipfs.io/ipfs/QmTppFVUw434kCXN393qAKzhZAvTiywB1hv1xKa1xQxPEo/1.json",
-        "https://ipfs.io/ipfs/QmTppFVUw434kCXN393qAKzhZAvTiywB1hv1xKa1xQxPEo/2.json",
-        "https://ipfs.io/ipfs/QmTppFVUw434kCXN393qAKzhZAvTiywB1hv1xKa1xQxPEo/3.json",
-        "https://ipfs.io/ipfs/QmTppFVUw434kCXN393qAKzhZAvTiywB1hv1xKa1xQxPEo/4.json",
-        "https://ipfs.io/ipfs/QmTppFVUw434kCXN393qAKzhZAvTiywB1hv1xKa1xQxPEo/5.json"
+        "https://liquibet.infura-ipfs.io/ipfs/QmTCDNmaz2UGH5e8eRxo5uGK1sx1SEwehvTTiHkMoNMzFk",
+        "https://liquibet.infura-ipfs.io/ipfs/Qme4NtSi6Au1Q38tm2LJPK1k3DLCobN1BEfteTgygLtECP",
+        "https://liquibet.infura-ipfs.io/ipfs/QmXfpFou3fJGPWnP3AATDLjuUEygRU9MM91vb6Z4fks7Sc",
+        "https://liquibet.infura-ipfs.io/ipfs/QmVmuVe4PGxpkHPncacitu5vcM2CEZHxJKaRCFCUuRhby6",
+        "https://liquibet.infura-ipfs.io/ipfs/QmPTWcwHHLQMJ1bS63g97Wi4Bngh3Nwc64kGbBjzbFaFV9",               
+        "https://liquibet.infura-ipfs.io/ipfs/QmeM4ZUihLEqR4JmV613QV466BYMFAEdavQsbPyKe9nwf9"
     ];
 
     constructor(uint256 updateInterval, address _pricefeed) ERC1155("") {
