@@ -28,7 +28,7 @@ async function main() {
   const tx = await stakingContract.withdrawEntirety();
   console.log("Awaiting confirmations");
   await tx.wait();
-  console.log(`Transaction completed. Hash: ${tx.hash}; Amount withdrawn: ${ethers.utils.parseEther(tx.data)}`);
+  console.log(`Transaction completed. Hash: ${tx.hash}`);
   console.log(`Deposit tx completed at ${stakingContract.address}`);
 }
 
