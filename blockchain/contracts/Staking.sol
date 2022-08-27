@@ -4,9 +4,9 @@ pragma solidity ^0.8.9;
 // Import this file to use console.log
 import "hardhat/console.sol";
 import "@chainlink/contracts/src/v0.8/KeeperCompatible.sol";
+import "./interfaces/IStakingProvider.sol";
 
-
-contract Staking is KeeperCompatibleInterface {
+contract Staking is KeeperCompatibleInterface, IStakingProvider {
 
     address payable public admin;
     uint256 interest_percent = 10;
@@ -40,7 +40,7 @@ contract Staking is KeeperCompatibleInterface {
     }
 
     // For testing/dev/demo purposes
-    function withdraw() public onlyOwner {
+    function withdraw() public onlyOwner returns (uint256 amount){
         require(stakingCustomers[msg.sender].when != 0, "Customer has no funds staked");
         uint256 returnAmount = stakingCustomers[msg.sender].amountDeposited * interest_percent + 100 / 100;
         require(address(this).balance > returnAmount, 
@@ -48,6 +48,11 @@ contract Staking is KeeperCompatibleInterface {
         (bool result, bytes memory returnData) = (msg.sender).call{
             value: returnAmount}("");
         require(result == true, "Failure to withdraw ether");
+        return returnAmount;
+    }
+
+    function getStakingInfo() public view returns (bytes32 name, bytes32 asset, uint256 apy) {
+        return("LiquiBet Staking Contract", "ETH", interest_percent);
     }
 
     // For Chainlink Keeper to call
@@ -63,9 +68,11 @@ contract Staking is KeeperCompatibleInterface {
     }
 
     // administrative function as deployer must deploy with a small amount of ETH
-    function withdrawEntirety() public onlyOwner {
+    function withdrawEntirety() public onlyOwner returns (uint256 amount){
+        uint256 amount = address(this).balance;
         (bool result, bytes memory returnData) = admin.call{value: address(this).balance}("");
         require(result == true, "Failure to withdraw ether; contract may be ");
+        return amount;
 
     }
 
