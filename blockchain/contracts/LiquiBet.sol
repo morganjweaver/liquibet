@@ -11,8 +11,7 @@ import "./interfaces/IStakingProvider.sol";
 import "./VRFOracle.sol";
 
 ///@title Liquibet gambling / lottery contract
-contract Liquibet is AccessControl { 
-  bytes32 public constant KEEPER_ROLE = keccak256("KEEPER_ROLE");
+contract Liquibet is AccessControl, KeeperCompatibleInterface { 
 
   struct Pool {
     uint256 poolId;
@@ -23,6 +22,7 @@ contract Liquibet is AccessControl {
     uint256 creatorFee;
     uint256 totalPlayersCount;
     bool exists;
+    bool active;
   }
 
   struct Tier {
@@ -49,6 +49,7 @@ contract Liquibet is AccessControl {
   IERC1155Token public token;
   mapping(uint256 => Pool) pools;
   uint256[] poolIds;
+  uint256 lastPriceFeedUpdate;
   mapping(uint256 => Tier[]) tiers;    // poolId => tiers
   mapping(uint256 => mapping(uint256 => address[])) tierPlayers;    // poolId => (tierId => player addresses)
   mapping(uint256 => uint256) poolLiquidationPrizes;         // poolId => prize for each winning player
@@ -58,6 +59,7 @@ contract Liquibet is AccessControl {
     token = IERC1155Token(_token);
     VRFOracle = VRFv2Consumer(_VRFContract);
     fee = _fee;
+    lastPriceFeedUpdate = block.timestamp;
     
     _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
   }
@@ -78,8 +80,6 @@ contract Liquibet is AccessControl {
     require(priceFeedAddress != address(0), "Price feed address is required");
     require(stakingContractAddress != address(0), "Staking contract address is required");
     require(keeperAddress != address(0), "Keeper address is required");
-
-    _grantRole(KEEPER_ROLE, keeperAddress);
     
     // get the current price for the asset pair as the lowestPrice of the pool
     uint256 currentPrice = 20000; // TODO    
@@ -97,7 +97,8 @@ contract Liquibet is AccessControl {
       stakingInfo: stakingInfo,
       creatorFee: 0,
       totalPlayersCount: 0,
-      exists: true
+      exists: true,
+      active: true
     });
 
     uint256 newPoolId = poolIds.length;
@@ -147,7 +148,7 @@ contract Liquibet is AccessControl {
 
   ///@notice performs the contract resolution phase - withdraws staked funds, performs lottery and determines liqudation winners
   ///@dev if winningPlayersCount = 0 (all players got liquidated) case not handled
-  function resolution(uint256 poolId) external onlyRole(KEEPER_ROLE) {
+  function resolution(uint256 poolId) internal {
     // check that lockin period ended
     Pool storage pool = pools[poolId];
     require(isPoolLocked(pool.startDateTime, pool.lockPeriod), "Pool locking period is still in effect");
@@ -167,13 +168,16 @@ contract Liquibet is AccessControl {
 
     // liquidations
     poolLiquidationPrizes[poolId] = getLiquidationPrize(poolId, pool.assetPair.lowestPrice);
+    
+    // mark inactive for keeper check
+    pool.active = false;
 
     // TODO if winningPlayersCount = 0 -> funds distributed to other pools and pool creator
   }
 
   ///@notice stake pool funds
   ///@dev works only for ETH
-  function stakePoolFunds(uint256 poolId) external onlyRole(KEEPER_ROLE) {
+  function stakePoolFunds(uint256 poolId) internal {
     Pool memory pool = pools[poolId];
     IStakingProvider stakingProvider = IStakingProvider(pool.stakingInfo.contractAddress);
     stakingProvider.stake{ value: pool.stakingInfo.amountStaked }();
@@ -181,7 +185,7 @@ contract Liquibet is AccessControl {
 
   ///@notice gets the price data from chainlink price feed
   ///@dev does not deal with asset decimals - TODO
-  function getPriceFeedData() external view onlyRole(KEEPER_ROLE) {
+  function getPriceFeedData() internal view {
     // foreach active pool get the asset type
     for (uint256 i = 0; i < poolIds.length; i++) {
       Pool memory pool = pools[i];
@@ -321,4 +325,71 @@ contract Liquibet is AccessControl {
 
       return currentPrice < 0 ? 0 : uint256(currentPrice);
   }
+
+  /**
+   * @notice Checks all pools to see which need upkeep.  Check happens on every mined block. 
+   * @return upkeepNeeded signals if upkeep is needed for any of the pools
+   */
+  function checkUpkeep(bytes calldata)
+    external
+    view
+    override
+    returns (bool upkeepNeeded, bytes memory performData)
+  {
+    if(block.timestamp + 6 hours > this.lastPriceFeedUpdate ){
+            upkeepNeeded = true;
+            performData = abi.encodePacked(uint256(0)); // This codes for the function to call in performUpkeep
+            return (true, performData);
+    }
+
+    for (uint256 i = 0; i < poolIds.length; i++) {
+      Pool memory pool = pools[i];
+      //determine whether to initiate staking
+      if (pool.active && pool.stakingInfo.amountStaked == 0 && block.timestamp >= pool.startDateTime - 15 seconds ) {
+            upkeepNeeded = true;
+            performData = abi.encodePacked(uint256(1)); 
+            return (true, performData);
+      }
+      // determine whether to call resolution fx
+       if (pool.active && block.timestamp >= pool.startDateTime + pool.lockPeriod - 15 seconds ) {
+            upkeepNeeded = true;
+            performData = abi.encodePacked(uint256(2)); 
+            return (true, performData);
+      }
+    }
+
+
+    upkeepNeeded = false;
+    performData = abi.encodePacked(uint256(3));
+    return (upkeepNeeded, performData);
+  }
+
+  /**
+   * @notice Called by keeper to send funds to underfunded addresses
+   * @param performData The abi encoded list of addresses to fund
+   */
+  function performUpkeep(bytes calldata performData) external override {
+   uint256 decodedValue = abi.decode(performData, (uint256));
+        if(decodedValue == 0){
+            getPriceFeedData();
+            this.lastPriceFeedUpdate = block.timestamp();
+        } 
+        if(decodedValue == 1){
+          for (uint256 i = 0; i < poolIds.length; i++) {
+            Pool memory pool = pools[i];
+            if (pool.active && pool.stakingInfo.amountStaked == 0 && block.timestamp >= pool.startDateTime - 15 seconds ) {
+              stakePoolFunds(pool.poolId);
+            }
+          }
+        } 
+        if(decodedValue == 2){
+          for (uint256 i = 0; i < poolIds.length; i++) {
+            Pool memory pool = pools[i];
+            if (pool.active && block.timestamp >= pool.startDateTime + pool.lockPeriod - 15 seconds ) {
+              this.resolution(pool.poolId);
+              pool.active = false;
+            }
+          } 
+        }
+}
 }
