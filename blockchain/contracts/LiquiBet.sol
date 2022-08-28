@@ -44,9 +44,9 @@ contract Liquibet is AccessControl {
 
   uint256 public fee;  // fee should be large enough to cover contract operating expenses
   IERC1155Token public token;
-  mapping(uint256 => Pool) pools;
+  mapping(uint256 => Pool) public pools;
   uint256[] public poolIds;
-  mapping(uint256 => Tier[]) tiers;    // poolId => tiers
+  mapping(uint256 => Tier[]) public tiers;    // poolId => tiers
   mapping(uint256 => mapping(uint256 => address[])) public tierPlayers;    // poolId => (tierId => player addresses)
   mapping(uint256 => uint256) public poolLiquidationPrizes;         // poolId => prize for each winning player
   mapping(uint256 => mapping(address => uint256)) public poolLotteryWinners;     // poolId => mapping(playerAddres => amount)
@@ -96,7 +96,7 @@ contract Liquibet is AccessControl {
       exists: true
     });
 
-    uint256 newPoolId = poolIds.length;
+    uint256 newPoolId = poolIds.length + 1;
     addNewPool(newPoolId, pool);
     
     // tier levels hard-coded for now

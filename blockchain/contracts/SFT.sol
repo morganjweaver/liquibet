@@ -58,8 +58,8 @@ contract SFT is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, KeeperCompatib
         return _uris[id];
     }
 
-    function mint(uint256 id, uint256 amount, bytes memory data) public {
-        _mint(msg.sender, id, amount, data);
+    function mint(address to, uint256 id, uint256 amount, bytes memory data) public {
+        _mint(to, id, amount, data);
     }
 
     function mintBatch(address to, uint256[] memory ids, uint256[] memory amounts, bytes memory data) public {

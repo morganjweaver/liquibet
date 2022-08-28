@@ -9,9 +9,10 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 // eslint-disable-next-line node/no-unpublished-import
 import { BigNumber } from "ethers";
 import { addSeconds, toSeconds } from "../helpers/dates";
+import { Liquibet__factory } from "../typechain-types";
 
 const TOKEN_UPDATE_INTERVAL = 100;
-const LIQUIBET_CONTRACT_FEE = 10000;
+const LIQUIBET_CONTRACT_FEE = 1000;
 
 const ASSET_DECIMALS: string = `18`;
 const ASSET_INITIAL_PRICE: string = `200000000000000000000`;
@@ -93,11 +94,77 @@ describe("Liquibet contract", async () => {
     });
   });
   
-  describe("When user creates new pool", async function() {
+  describe("When admin user creates new pool", async function() {
     
-    it("new pool is created with id 0", async function() {
+    it("new pool is created with id 1", async function() {
       let poolId = await liquiBetContract.poolIds(0);
-      expect(poolId).to.eq(0);
+      expect(poolId).to.eq(1);
+    });
+  });
+  
+  describe("When player buys in", async function() {
+    
+    let accountValue: BigNumber;
+    let txFee: BigNumber;
+    let tokensEarned: BigNumber;
+
+    const POOL_ID = 1;
+    const TIER_ID = 1;
+    const TOKEN_ID = 11;
+    const TIER_BUYIN_PRICE = 50;
+    const TOTAL_BUYIN_PRICE = TIER_BUYIN_PRICE + LIQUIBET_CONTRACT_FEE;
+    const TIER_LIQUIDATION_PRICE = 7;
+    const TOKENS_AMOUNT = 1;
+
+    beforeEach(async () => {
+      accountValue = await accounts[0].getBalance();
+      const tx = await liquiBetContract.buyIn(
+        POOL_ID,
+        TIER_ID,
+        TOKENS_AMOUNT,
+        {
+          value: ethers.utils.parseEther(TOTAL_BUYIN_PRICE.toFixed(0))
+        }  
+      );
+      const purchaseTokenTxReceipt = await tx.wait();
+      const gasUsed = purchaseTokenTxReceipt.gasUsed;
+      const effectiveGasPrice = purchaseTokenTxReceipt.effectiveGasPrice;
+      txFee = gasUsed.mul(effectiveGasPrice);
+      tokensEarned = await tokenContract.balanceOf(accounts[0].address, TOKEN_ID);
+    });
+
+    it("charges corrent amount of ETH based on chosen tier level", async function() {
+      const newAccountValue = await accounts[0].getBalance();
+      const diff = accountValue.sub(newAccountValue);
+      const expectedDiff = ethers.utils
+        .parseEther(TOTAL_BUYIN_PRICE.toFixed(0))
+        .add(txFee);
+      expect(expectedDiff.sub(diff)).to.eq("0");
+    });
+
+    it("token is minted and transfered to the player", async function() {
+      expect(tokensEarned.toString()).to.eq(TOKENS_AMOUNT.toString());
+    });
+
+    it("token has correct tokenId based on poolId and tierId", async function() {
+      let tokenBalance = await tokenContract.balanceOf(accounts[0].address, TOKEN_ID)
+      expect(tokenBalance).to.be.greaterThan(0);
+    });
+    
+    it("total players count increased by one", async function() {
+      const pool = await liquiBetContract.pools(POOL_ID);
+      expect(pool[6]).to.eq(1);
+    });
+    
+    it("player address added to tier players", async function() {
+      const playerAddress = await liquiBetContract.tierPlayers(POOL_ID, TIER_ID, 0);
+      expect(playerAddress).to.eq(accounts[0].address);
+    });
+    
+    it("pool amount to be staked incresed for correct value", async function() {
+      const pool = await liquiBetContract.pools(POOL_ID);
+      const amountStaked = pool.stakingInfo[4];
+      expect(Number(ethers.utils.formatEther(amountStaked))).to.eq(TIER_BUYIN_PRICE);
     });
   });
 });
