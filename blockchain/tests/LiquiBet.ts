@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
 // eslint-disable-next-line node/no-missing-import
-import { SFT } from "../typechain-types/contracts";
+import { SFT, Staking } from "../typechain-types/contracts";
 import { Liquibet } from "../typechain-types/contracts/LiquiBet.sol";
 import { MockV3Aggregator } from "../typechain-types/contracts/tests";
 // eslint-disable-next-line node/no-unpublished-import
@@ -22,12 +22,19 @@ describe("Liquibet contract", async () => {
   let aggregatorContract: MockV3Aggregator;
   let accounts: SignerWithAddress[];
   
+  const now = new Date();
+  const startDateTime = toSeconds(addSeconds(now, 20)); 
+  const lockPeriod = 10;
+  const assetPairName = "ETHUSD";
+  let stakingContract: Staking;
+  let keeperAddress = "0xA39434A63A52E749F02807ae27335515BA4b07F7"; //TODO;
+  
   beforeEach(async () => {
     accounts = await ethers.getSigners();
 
     const tokenContractFactory = await ethers.getContractFactory("SFT"); 
     const liquiBetContractFactory = await ethers.getContractFactory("Liquibet");
-    const aggregatorContractFactory = await ethers.getContractFactory("MockV3Aggregator")
+    const aggregatorContractFactory = await ethers.getContractFactory("MockV3Aggregator");
     
     aggregatorContract = await aggregatorContractFactory.deploy(
       ASSET_DECIMALS,
@@ -46,6 +53,21 @@ describe("Liquibet contract", async () => {
       ethers.utils.parseEther(LIQUIBET_CONTRACT_FEE.toFixed(18)),
     ) as Liquibet;
     await liquiBetContract.deployed();
+    
+    const stakingContractFactory = await ethers.getContractFactory("Staking");
+    stakingContract = await stakingContractFactory.deploy(10) as Staking;
+    await stakingContract.deployed();
+
+    const tx = await liquiBetContract.createPool(
+      startDateTime,
+      lockPeriod,
+      ethers.utils.formatBytes32String(assetPairName),
+      aggregatorContract.address,
+      stakingContract.address,
+      keeperAddress
+    );
+
+    await tx.wait();
   });
   
   describe("When the liquibet contract is deployed", async function() {
@@ -72,30 +94,10 @@ describe("Liquibet contract", async () => {
   });
   
   describe("When user creates new pool", async function() {
-     
-    const now = new Date();
-    const startDateTime = toSeconds(addSeconds(now, 20)); 
-    const lockPeriod = 10;
-    const assetPairName = "ETHUSD";
-    const priceFeedAddress = aggregatorContract.address;
-    const stakingContractAddress = "0xA39434A63A52E749F02807ae27335515BA4b07F7"; //TODO
-    const keeperAddress = "0xA39434A63A52E749F02807ae27335515BA4b07F7"; //TODO;
-
-    beforeEach(async () => {  
-      const tx = await liquiBetContract.createPool(
-        startDateTime,
-        lockPeriod,
-        assetPairName,
-        priceFeedAddress,
-        stakingContractAddress,
-        keeperAddress
-      );
-
-      await tx.wait();
-    });
-
-    it("new pool is created", async function() {
-      
+    
+    it("new pool is created with id 0", async function() {
+      let poolId = await liquiBetContract.poolIds(0);
+      expect(poolId).to.eq(0);
     });
   });
 });

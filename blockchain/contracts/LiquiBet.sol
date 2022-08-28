@@ -24,7 +24,7 @@ contract Liquibet is AccessControl {
   }
 
   struct Tier {
-    uint256 buyInAmount;
+    uint256 buyInPrice;
     uint256 liquidationPrice;
   }
 
@@ -45,11 +45,11 @@ contract Liquibet is AccessControl {
   uint256 public fee;  // fee should be large enough to cover contract operating expenses
   IERC1155Token public token;
   mapping(uint256 => Pool) pools;
-  uint256[] poolIds;
+  uint256[] public poolIds;
   mapping(uint256 => Tier[]) tiers;    // poolId => tiers
-  mapping(uint256 => mapping(uint256 => address[])) tierPlayers;    // poolId => (tierId => player addresses)
-  mapping(uint256 => uint256) poolLiquidationPrizes;         // poolId => prize for each winning player
-  mapping(uint256 => mapping(address => uint256)) poolLotteryWinners;     // poolId => mapping(playerAddres => amount)
+  mapping(uint256 => mapping(uint256 => address[])) public tierPlayers;    // poolId => (tierId => player addresses)
+  mapping(uint256 => uint256) public poolLiquidationPrizes;         // poolId => prize for each winning player
+  mapping(uint256 => mapping(address => uint256)) public poolLotteryWinners;     // poolId => mapping(playerAddres => amount)
 
   constructor(address _token, uint256 _fee) {
     token = IERC1155Token(_token);
@@ -100,11 +100,11 @@ contract Liquibet is AccessControl {
     addNewPool(newPoolId, pool);
     
     // tier levels hard-coded for now
-    tiers[newPoolId][0] = Tier(50, 7);
-    tiers[newPoolId][1] = Tier(100, 12);
-    tiers[newPoolId][2] = Tier(500, 17);
-    tiers[newPoolId][3] = Tier(1000, 25);
-    tiers[newPoolId][4] = Tier(5000, 35);
+    tiers[newPoolId].push(Tier(50, 7));
+    tiers[newPoolId].push(Tier(100, 12));
+    tiers[newPoolId].push(Tier(500, 17));
+    tiers[newPoolId].push(Tier(1000, 25));
+    tiers[newPoolId].push(Tier(5000, 35));
 
     // setup a keeper that calls the stakePoolFunds function with poolId on the pool startDateTime
     // setup a keeper that calls the resolution function with poolId on the end of the lockInPeriod
@@ -125,7 +125,7 @@ contract Liquibet is AccessControl {
     // check if tier exists
     require(tierId < tiers[poolId].length, "Tier doesn't exist in the given pool");
     // check msg.value >= necessary tier level amount for pool + fee
-    require(msg.value >= amount * tiers[poolId][tierId].buyInAmount + fee, "Not enough funds for chosen tier level");
+    require(msg.value >= amount * tiers[poolId][tierId].buyInPrice + fee, "Not enough funds for chosen tier level");
 
     // mint token based on pool and tier
     uint256 tokenId = getTokenId(poolId, tierId); // tokenId = poolId_tierId
@@ -255,7 +255,7 @@ contract Liquibet is AccessControl {
       if (isLiquidated(tier.liquidationPrice, poolAssetLowestPrice)) {
         uint256 tokenSupply = token.totalSupply(tokenId);
         winningPlayersCount += tokenSupply;
-        totalLiquidatedFunds += tier.buyInAmount * tokenSupply;
+        totalLiquidatedFunds += tier.buyInPrice * tokenSupply;
       }
     }
 
