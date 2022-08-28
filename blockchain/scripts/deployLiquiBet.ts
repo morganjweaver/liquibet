@@ -1,7 +1,8 @@
-import { ethers } from "ethers"; // Hardhat for testing
+import { ethers, Contract } from "ethers"; // Hardhat for testing
 import "dotenv/config";
 import * as LiquiBetJSON from "../artifacts/contracts/LiquiBet.sol/LiquiBet.json";
 import * as VRFJSON from "../artifacts/contracts/VRFOracle.sol/VRFv2Consumer.json";
+import { VRFv2Consumer } from "../typechain-types";
 import {
   getSigner,
   checkBalance,
@@ -17,6 +18,7 @@ async function main() {
   const tokenAddress = process.argv[2];
   const fee = process.argv[3];
   
+  // First deploy randomness oracle
   console.log("Deploying Randomness contract");
   const VRFFactory = new ethers.ContractFactory(
     VRFJSON.abi,
@@ -31,6 +33,15 @@ async function main() {
   console.log("Completed VRF Oracle deployment");
   console.log(`VRF Oracle contract deployed at ${VRFContract.address}`);
   
+  console.log("Deploying VRF Consumer contract");
+  const VRFConsumer: VRFv2Consumer = new Contract(
+    VRFContract.address,
+    VRFJSON.abi,
+    signer
+  ) as VRFv2Consumer;
+  VRFConsumer.requestRandomWords(); //load randomness
+  console.log("Requested random words for lottery");
+  
   // Now deploy LiquiBet 
   console.log("Deploying LiquiBet contract");
   const LiquiBetFactory = new ethers.ContractFactory(
@@ -40,6 +51,7 @@ async function main() {
   );
   const LiquiBetContract = await LiquiBetFactory.deploy(
    tokenAddress,
+   VRFContract.address,
    fee
   );
   console.log("Awaiting confirmation on LiquiBet deployment");
