@@ -3,6 +3,9 @@
   "description": "blockchain related development module",
   "license": "MIT",
   "private": false,
+  "scripts": {
+    "compile": "yarn hardhat compile"
+  },
   "devDependencies": {
     "@ethersproject/abi": "^5.6.4",
     "@ethersproject/bytes": "^5.0.0",
