@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { ethers } from "hardhat";
+import { ethers, network } from "hardhat";
 // eslint-disable-next-line node/no-missing-import
 import { SFT, Staking } from "../typechain-types/contracts";
 import { Liquibet } from "../typechain-types/contracts/LiquiBet.sol";
@@ -17,6 +17,8 @@ const LIQUIBET_CONTRACT_FEE = 1000;
 const ASSET_DECIMALS: string = `18`;
 const ASSET_INITIAL_PRICE: string = `200000000000000000000`;
 
+const POOL_ID = 1;
+
 describe("Liquibet contract", async () => {
   let tokenContract: SFT;
   let liquiBetContract: Liquibet;
@@ -24,14 +26,15 @@ describe("Liquibet contract", async () => {
   let accounts: SignerWithAddress[];
   
   const now = new Date();
-  const startDateTime = toSeconds(addSeconds(now, 20)); 
+  const startDateTime = toSeconds(addSeconds(now, 30)); 
   const lockPeriod = 10;
   const assetPairName = "ETHUSD";
   let stakingContract: Staking;
-  let keeperAddress = "0xA39434A63A52E749F02807ae27335515BA4b07F7"; //TODO;
+  let keeperAddress = ""; //TODO keeper mock address;
   
   beforeEach(async () => {
     accounts = await ethers.getSigners();
+    keeperAddress = accounts[0].address;
 
     const tokenContractFactory = await ethers.getContractFactory("SFT"); 
     const liquiBetContractFactory = await ethers.getContractFactory("Liquibet");
@@ -102,13 +105,12 @@ describe("Liquibet contract", async () => {
     });
   });
   
-  describe("When player buys in", async function() {
+  describe("When player buys a spot in a pool for a chosen tier (buyin)", async function() {
     
     let accountValue: BigNumber;
     let txFee: BigNumber;
     let tokensEarned: BigNumber;
 
-    const POOL_ID = 1;
     const TIER_ID = 1;
     const TOKEN_ID = 11;
     const TIER_BUYIN_PRICE = 50;
@@ -165,6 +167,33 @@ describe("Liquibet contract", async () => {
       const pool = await liquiBetContract.pools(POOL_ID);
       const amountStaked = pool.stakingInfo[4];
       expect(Number(ethers.utils.formatEther(amountStaked))).to.eq(TIER_BUYIN_PRICE);
+    });
+    
+    describe("When the pool buy-in period ends", async function() {
+      beforeEach(async () => {
+        const stakingTx = await liquiBetContract.stakePoolFunds(POOL_ID);
+        await stakingTx.wait();
+      });
+
+      describe("When the pool lock-in period ends", async function() {
+        beforeEach(async () => {
+          network.provider.send("evm_increaseTime", [60]);
+          network.provider.send("evm_mine");
+
+          const tx = await liquiBetContract.resolution(POOL_ID)
+          await tx.wait();
+        });
+
+        it("should calculate lottery winning for a player", async function() {
+          const lotteryPrize = await liquiBetContract.poolLotteryWinners(POOL_ID, accounts[0].address);
+          expect(lotteryPrize).to.eq(10);
+        });
+
+        it("should calculate correct liquidation prize for each winning player", async function() {
+          const liquidationPrize = await liquiBetContract.poolLiquidationPrizes(POOL_ID);
+          expect(liquidationPrize).to.eq(10);
+        });
+      });
     });
   });
 });

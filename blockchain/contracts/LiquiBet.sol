@@ -302,7 +302,7 @@ contract Liquibet is AccessControl {
   }
   
   function isPoolLocked(uint256 startDateTime, uint256 lockPeriod) private view returns(bool) {
-    return block.timestamp > startDateTime + lockPeriod;
+    return block.timestamp < startDateTime + lockPeriod;
   }
 
   ///@notice get the latest price from chainling price feed
