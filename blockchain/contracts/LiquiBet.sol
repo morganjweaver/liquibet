@@ -3,10 +3,12 @@ pragma solidity ^0.8.9;
 
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "@chainlink/contracts/src/v0.8/KeeperCompatible.sol";
+import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "./interfaces/IERC1155Token.sol";
 import "./interfaces/IStakingProvider.sol";
+import "./VRFOracle.sol";
 
 ///@title Liquibet gambling / lottery contract
 contract Liquibet is AccessControl { 
@@ -43,6 +45,7 @@ contract Liquibet is AccessControl {
   }
 
   uint256 fee;  // fee should be large enough to cover contract operating expenses
+  VRFv2Consumer public VRFOracle; // randomness oracle
   IERC1155Token public token;
   mapping(uint256 => Pool) pools;
   uint256[] poolIds;
@@ -51,8 +54,9 @@ contract Liquibet is AccessControl {
   mapping(uint256 => uint256) poolLiquidationPrizes;         // poolId => prize for each winning player
   mapping(uint256 => mapping(address => uint256)) poolLotteryWinners;     // poolId => mapping(playerAddres => amount)
 
-  constructor(address _token, uint256 _fee) {
+  constructor(address _token, address _VRFContract, uint256 _fee) {
     token = IERC1155Token(_token);
+    VRFOracle = VRFv2Consumer(_VRFContract);
     fee = _fee;
     
     _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
@@ -230,6 +234,7 @@ contract Liquibet is AccessControl {
 
     if (allPlayers.length > 0) {
         uint256 winnerIndex = getRandomNumber() % allPlayers.length;
+        
         return allPlayers[winnerIndex];
     }
 
@@ -267,7 +272,10 @@ contract Liquibet is AccessControl {
   }
 
   function getRandomNumber() private view returns (uint256) {
-      // TODO implement chainlink VRF
+      uint256 oracleRand = VRFOracle.s_randomWords(0);
+      if(oracleRand != 0){
+        return oracleRand;
+      }
       return uint256(blockhash(block.number - 1));
   }
 

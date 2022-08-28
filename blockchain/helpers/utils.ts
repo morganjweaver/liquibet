@@ -26,6 +26,13 @@ async function checkBalance(signer: ethers.Wallet): Promise<boolean> {
   return true;
 }
 
+function getVRFSubscriptionValue() {
+  const subscriptionId = process.env.VRF_SUBSCRIPTION_ID;
+  if (!subscriptionId){
+    throw Error("Please set VRF Subscription ID in your .env");
+  }
+  return subscriptionId;
+}
 function getSigner(): ethers.Wallet {
   const wallet =
     process.env.ADMIN_WALLET_SEED && process.env.ADMIN_WALLET_SEED.length > 0
