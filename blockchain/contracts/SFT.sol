@@ -11,7 +11,13 @@ import "@chainlink/contracts/src/v0.8/KeeperCompatible.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "./interfaces/IERC1155Token.sol";
 
-contract SFT is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, KeeperCompatibleInterface {
+contract SFT is
+    ERC1155,
+    Ownable,
+    ERC1155Burnable,
+    ERC1155Supply,
+    KeeperCompatibleInterface
+{
     uint8 public constant TIER_1 = 1; // 10% fluctuation
     uint8 public constant TIER_2 = 2; // 17% fluctuaton
     uint8 public constant TIER_3 = 3; // 25% fluctuation
@@ -33,7 +39,7 @@ contract SFT is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, KeeperCompatib
         "https://liquibet.infura-ipfs.io/ipfs/Qme4NtSi6Au1Q38tm2LJPK1k3DLCobN1BEfteTgygLtECP",
         "https://liquibet.infura-ipfs.io/ipfs/QmXfpFou3fJGPWnP3AATDLjuUEygRU9MM91vb6Z4fks7Sc",
         "https://liquibet.infura-ipfs.io/ipfs/QmVmuVe4PGxpkHPncacitu5vcM2CEZHxJKaRCFCUuRhby6",
-        "https://liquibet.infura-ipfs.io/ipfs/QmPTWcwHHLQMJ1bS63g97Wi4Bngh3Nwc64kGbBjzbFaFV9",               
+        "https://liquibet.infura-ipfs.io/ipfs/QmPTWcwHHLQMJ1bS63g97Wi4Bngh3Nwc64kGbBjzbFaFV9",
         "https://liquibet.infura-ipfs.io/ipfs/QmeM4ZUihLEqR4JmV613QV466BYMFAEdavQsbPyKe9nwf9"
     ];
 
@@ -58,11 +64,20 @@ contract SFT is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, KeeperCompatib
         return _uris[id];
     }
 
-    function mint(uint256 id, uint256 amount, bytes memory data) public {
+    function mint(
+        uint256 id,
+        uint256 amount,
+        bytes memory data
+    ) public {
         _mint(msg.sender, id, amount, data);
     }
 
-    function mintBatch(address to, uint256[] memory ids, uint256[] memory amounts, bytes memory data) public {
+    function mintBatch(
+        address to,
+        uint256[] memory ids,
+        uint256[] memory amounts,
+        bytes memory data
+    ) public {
         _mintBatch(to, ids, amounts, data);
     }
 
@@ -118,7 +133,7 @@ contract SFT is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, KeeperCompatib
                 _isLiquidated[TIER_5] = true;
                 return;
             }
-            if (latestPrice < initialPrice / 4) {
+            if (latestPrice < (initialPrice / 4) * 3) {
                 setTokenUri(TIER_1, healthUrisIpfs[0]);
                 setTokenUri(TIER_2, healthUrisIpfs[0]);
                 setTokenUri(TIER_3, healthUrisIpfs[0]);
@@ -132,7 +147,7 @@ contract SFT is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, KeeperCompatib
                 _isLiquidated[TIER_4] = true;
                 return;
             }
-            if (latestPrice < initialPrice / 5) {
+            if (latestPrice < (initialPrice / 5) * 4) {
                 setTokenUri(TIER_1, healthUrisIpfs[0]);
                 setTokenUri(TIER_2, healthUrisIpfs[0]);
                 setTokenUri(TIER_3, healthUrisIpfs[0]);
@@ -147,7 +162,7 @@ contract SFT is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, KeeperCompatib
                 _isLiquidated[TIER_3] = true;
                 return;
             }
-            if (latestPrice < initialPrice / 10) {
+            if (latestPrice < (initialPrice / 10) * 9) {
                 setTokenUri(TIER_1, healthUrisIpfs[0]);
                 setTokenUri(TIER_2, healthUrisIpfs[0]);
                 if (!_isLiquidated[TIER_3]) {
@@ -163,8 +178,7 @@ contract SFT is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, KeeperCompatib
                 _isLiquidated[TIER_2] = true;
                 return;
             }
-            if (latestPrice < initialPrice / 20) {
-                console.log("All SFTs get liquidated");
+            if (latestPrice < (initialPrice / 20) * 19) {
                 setTokenUri(TIER_1, healthUrisIpfs[0]);
                 if (!_isLiquidated[TIER_2]) {
                     setTokenUri(TIER_2, healthUrisIpfs[1]);
@@ -188,15 +202,20 @@ contract SFT is ERC1155, Ownable, ERC1155Burnable, ERC1155Supply, KeeperCompatib
     }
 
     function _beforeTokenTransfer(
-        address operator, 
-        address from, 
-        address to, 
-        uint256[] memory ids, 
-        uint256[] memory amounts, 
+        address operator,
+        address from,
+        address to,
+        uint256[] memory ids,
+        uint256[] memory amounts,
         bytes memory data
-    ) 
-        internal 
-        override (ERC1155, ERC1155Supply) {
-        ERC1155Supply._beforeTokenTransfer(operator, from, to, ids, amounts, data);
+    ) internal override(ERC1155, ERC1155Supply) {
+        ERC1155Supply._beforeTokenTransfer(
+            operator,
+            from,
+            to,
+            ids,
+            amounts,
+            data
+        );
     }
 }
