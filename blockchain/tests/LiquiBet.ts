@@ -12,7 +12,7 @@ import { addSeconds, toSeconds } from "../helpers/dates";
 import { Liquibet__factory } from "../typechain-types";
 
 const TOKEN_UPDATE_INTERVAL = 100;
-const LIQUIBET_CONTRACT_FEE = 1000;
+const LIQUIBET_CONTRACT_FEE = 100;
 
 const ASSET_DECIMALS: string = `18`;
 const ASSET_INITIAL_PRICE: string = `200000000000000000000`;
@@ -34,7 +34,7 @@ describe("Liquibet contract", async () => {
   
   beforeEach(async () => {
     accounts = await ethers.getSigners();
-    keeperAddress = accounts[0].address;
+    keeperAddress = accounts[0].address;  // deployer account has admin and keeper role granted
 
     const tokenContractFactory = await ethers.getContractFactory("SFT"); 
     const liquiBetContractFactory = await ethers.getContractFactory("Liquibet");
@@ -61,6 +61,9 @@ describe("Liquibet contract", async () => {
     const stakingContractFactory = await ethers.getContractFactory("Staking");
     stakingContract = await stakingContractFactory.deploy(10) as Staking;
     await stakingContract.deployed();
+
+    // fund the staking contract
+    accounts[0].sendTransaction({ to: stakingContract.address, value: ethers.utils.parseEther("10.0")});
 
     const tx = await liquiBetContract.createPool(
       startDateTime,
@@ -111,8 +114,8 @@ describe("Liquibet contract", async () => {
     let txFee: BigNumber;
     let tokensEarned: BigNumber;
 
-    const TIER_ID = 1;
-    const TOKEN_ID = 11;
+    const TIER_ID = 0;
+    const TOKEN_ID = 10;
     const TIER_BUYIN_PRICE = 50;
     const TOTAL_BUYIN_PRICE = TIER_BUYIN_PRICE + LIQUIBET_CONTRACT_FEE;
     const TIER_LIQUIDATION_PRICE = 7;
@@ -184,14 +187,17 @@ describe("Liquibet contract", async () => {
           await tx.wait();
         });
 
-        it("should calculate lottery winning for a player", async function() {
+        it("should calculate lottery prize for a player", async function() {
           const lotteryPrize = await liquiBetContract.poolLotteryWinners(POOL_ID, accounts[0].address);
-          expect(lotteryPrize).to.eq(10);
+          const pool = await liquiBetContract.pools(POOL_ID);
+          const apy = pool.stakingInfo[3];
+          const expectedPrize = (TIER_BUYIN_PRICE / 100) * Number(apy);
+          expect(Number(ethers.utils.formatEther(lotteryPrize))).to.eq(expectedPrize);
         });
 
         it("should calculate correct liquidation prize for each winning player", async function() {
           const liquidationPrize = await liquiBetContract.poolLiquidationPrizes(POOL_ID);
-          expect(liquidationPrize).to.eq(10);
+          expect(liquidationPrize).to.eq(TIER_BUYIN_PRICE);
         });
       });
     });

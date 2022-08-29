@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 
+import "hardhat/console.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "@chainlink/contracts/src/v0.8/KeeperCompatible.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -32,8 +33,8 @@ contract Liquibet is AccessControl {
     bytes32 name;
     address contractAddress;
     bytes32 asset;
-    uint256 apy;
-    uint amountStaked;
+    uint256 apy;   // TODO uint8
+    uint256 amountStaked;
   }
 
   struct AssetPair {
@@ -58,6 +59,8 @@ contract Liquibet is AccessControl {
     _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
   }
 
+  receive() external payable {}
+  
   ///@notice create a new pool
   ///@dev tier levels are hard-coded for now
   function createPool(
@@ -154,8 +157,19 @@ contract Liquibet is AccessControl {
 
     // lottery
     uint256 lotteryPrize = safeSubtract(totalAmount, pool.stakingInfo.amountStaked);
+
+    console.log(
+      "amount staked: %s, amount from staking: %s, lottery prize: %s", 
+      pool.stakingInfo.amountStaked, 
+      totalAmount, 
+      lotteryPrize
+    );
+
     if (lotteryPrize > 0) {
       address winner = getLotteryWinner(poolId, pool.totalPlayersCount);
+      
+      console.log("lottery winner: %s", winner);
+
       if (winner != address(0)) {
         poolLotteryWinners[poolId][winner] = lotteryPrize;
       }
@@ -173,6 +187,8 @@ contract Liquibet is AccessControl {
     Pool memory pool = pools[poolId];
     IStakingProvider stakingProvider = IStakingProvider(pool.stakingInfo.contractAddress);
     stakingProvider.stake{ value: pool.stakingInfo.amountStaked }();
+
+    // emit FundsStaked(poolId, pool.stakingInfo.asset, pool.stakingInfo.amountStaked)
   }
 
   ///@notice gets the price data from chainlink price feed
@@ -260,6 +276,7 @@ contract Liquibet is AccessControl {
     }
 
     if (winningPlayersCount > 0) {
+      console.log("totalLiquidatedFunds: %s, winningPlayersCount: %s", totalLiquidatedFunds, winningPlayersCount);
       return totalLiquidatedFunds / winningPlayersCount;
     }
 
