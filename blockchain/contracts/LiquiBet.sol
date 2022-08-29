@@ -387,27 +387,27 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
    * @param performData The abi encoded list of addresses to fund
    */
   function performUpkeep(bytes calldata performData) external override {
-   uint256 decodedValue = abi.decode(performData, (uint256));
-        if(decodedValue == 0){
-            getPriceFeedData();
-            lastPriceFeedUpdate = block.timestamp;
-        } 
-        if(decodedValue == 1){
-          for (uint256 i = 0; i < poolIds.length; i++) {
-            Pool memory pool = pools[i];
-            if (pool.active && pool.stakingInfo.amountStaked == 0 && block.timestamp >= pool.startDateTime - 15 seconds ) {
-              stakePoolFunds(pool.poolId);
-            }
-          }
-        } 
-        if(decodedValue == 2){
-          for (uint256 i = 0; i < poolIds.length; i++) {
-            Pool memory pool = pools[i];
-            if (pool.active && block.timestamp >= pool.startDateTime + pool.lockPeriod - 15 seconds ) {
-              resolution(pool.poolId);
-              pool.active = false;
-            }
-          } 
+    uint256 decodedValue = abi.decode(performData, (uint256));
+    if(decodedValue == 0){
+        getPriceFeedData();
+        lastPriceFeedUpdate = block.timestamp;
+    } 
+    if(decodedValue == 1){
+      for (uint256 i = 0; i < poolIds.length; i++) {
+        Pool memory pool = pools[i];
+        if (pool.active && pool.stakingInfo.amountStaked == 0 && block.timestamp >= pool.startDateTime - 15 seconds ) {
+          stakePoolFunds(pool.poolId);
         }
-}
+      }
+    } 
+    if(decodedValue == 2){
+      for (uint256 i = 0; i < poolIds.length; i++) {
+        Pool memory pool = pools[i];
+        if (pool.active && block.timestamp >= pool.startDateTime + pool.lockPeriod - 15 seconds ) {
+          resolution(pool.poolId);
+          pool.active = false;
+        }
+      } 
+    }
+  }
 }
