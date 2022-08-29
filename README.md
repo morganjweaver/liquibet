@@ -17,28 +17,29 @@
 *** See the bottom of this document for the declaration of the reference variables
 *** for contributors-url, forks-url, etc. This is an optional, concise syntax you may use.
 *** https://www.markdownguide.org/basic-syntax/#reference-style-links
--->
+
 [![Contributors][contributors-shield]][contributors-url]
 [![Forks][forks-shield]][forks-url]
 [![Stargazers][stars-shield]][stars-url]
 [![Issues][issues-shield]][issues-url]
 [![MIT License][license-shield]][license-url]
 [![LinkedIn][linkedin-shield]][linkedin-url]
-
+-->
 
 
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
   <a href="https://github.com/othneildrew/Best-README-Template">
-    <img src="images/logo.png" alt="Logo" width="80" height="80">
+    <img src="images/logo.png" alt="Logo" width="360" height="160">
   </a>
 
-  <h3 align="center">LiquiBet</h3>
+  <h1 align="center">LiquiBet: A Mutating NFT Asset Derivatives with Gambling and Lottery Mechanics</h1>
 
-  <p align="center">
-    An awesome weird funny DeFi Lottery dynamic SFT!
+  <h3 align="center">
+    Crypto winter is upon us; why not gamble, degens?
     <br />
+    <!--
     <a href="https://github.com/othneildrew/Best-README-Template"><strong>Explore the docs »</strong></a>
     <br />
     <br />
@@ -47,12 +48,13 @@
     <a href="https://github.com/othneildrew/Best-README-Template/issues">Report Bug</a>
     ·
     <a href="https://github.com/othneildrew/Best-README-Template/issues">Request Feature</a>
-  </p>
+    -->
+  </h3>
 </div>
 
 
 
-<!-- TABLE OF CONTENTS -->
+<!-- TABLE OF CONTENTS 
 <details>
   <summary>Table of Contents</summary>
   <ol>
@@ -77,7 +79,7 @@
     <li><a href="#acknowledgments">Acknowledgments</a></li>
   </ol>
 </details>
-
+-->
 
 
 <!-- ABOUT THE PROJECT -->
@@ -85,21 +87,26 @@
 
 [![LiquiBet Screen Shot][product-screenshot]](https://example.com)
 
-There are many great README templates available on GitHub; however, I didn't find one that really suited my needs so I created this enhanced one. I want to create a README template so amazing that it'll be the last one you ever need -- I think this is it.
+LiquiBet is an SFT gambling token and objet d'art based on ERC-1155. Players choose a fungible token, such as BTC or MATIC, known as the ‘representational asset’ of the SFT, thereby ‘betting’ on the future of the coin. Purchase is with a stablecoin such as DAI. A betting period lasts for a set duration, such as one month, and the SFT doubles as the gambling contract, though the user must elect to enter the contract after token purchase, affording secondary market and derivative opportunities.
 
-Here's why:
-* Your time should be focused on creating something amazing. A project that solves a problem and helps others
-* You shouldn't be doing the same tasks over and over like creating a README from scratch
-* You should implement DRY principles to the rest of your life :smile:
+The SFT image changes regularly depending on the price fluctuation of the representational token, and ranges from 'healthy' to 'liquidated' on a 6-point scale. A Chainlink oracle tracks asset price, and updates the token image accordingly. All images were created with Midjourney to illustrate a cyberpunk motif.
 
-Of course, no one template will serve all projects since your needs may be different. So I'll be adding more in the near future. You may also suggest changes by forking this repo and creating a pull request or opening an issue. Thanks to all the people have contributed to expanding this template!
+Buy-in is set at one of five price tiers. Higher buy-ins have greater price drop requirements to be liquidated. When a contract gets liquidated, the buy-in is distributed to the higher tier players.
 
-Use the `BLANK_README.md` to get started.
+What about the lowest tier, which receives no payouts? All contracts double as a lottery ticket, with Chainlink VRF for fairness, with the lowest buy-in tier acting as the best deal on these lottery payouts as a compromise for the lack of liquidation payout.
+
+These dynamics of our v1 MVP offer at least two strategies for low-tier and high-tier buy-ins: play the lottery cheaply, or cash in on liquidations.
+
+What if a market crashes and all contracts are liquidated? The payout is re-invested in the next lottery pool as incentivization for the next gambling lock-in period.
+
+Setup:
+
+See env.example, and ask Morgan for the Chainlink Randomness subscription ID.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
-
+<!--
 ### Built With
 
 This section should list any major frameworks/libraries used to bootstrap your project. Leave any add-ons/plugins for the acknowledgements section. Here are a few examples.
@@ -114,10 +121,10 @@ This section should list any major frameworks/libraries used to bootstrap your p
 * [![JQuery][JQuery.com]][JQuery-url]
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
+-->
 
 
-
-<!-- GETTING STARTED -->
+<!-- GETTING STARTED 
 ## Getting Started
 
 This is an example of how you may give instructions on setting up your project locally.
@@ -150,10 +157,10 @@ _Below is an example of how you can instruct your audience on installing and set
    ```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
+-->
 
 
-
-<!-- USAGE EXAMPLES -->
+<!-- USAGE EXAMPLES 
 ## Usage
 
 Use this space to show useful examples of how a project can be used. Additional screenshots, code examples and demos work well in this space. You may also link to more resources.
@@ -161,21 +168,17 @@ Use this space to show useful examples of how a project can be used. Additional 
 _For more examples, please refer to the [Documentation](https://example.com)_
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
-
+-->
 
 
 <!-- ROADMAP -->
 ## Roadmap
 
-- [x] Add Changelog
-- [x] Add back to top links
-- [ ] Add Additional Templates w/ Examples
-- [ ] Add "components" document to easily copy & paste sections of the readme
-- [ ] Multi-language Support
-    - [ ] Chinese
-    - [ ] Spanish
+- [x] Implement ERC1155 Token
+- [x] Implement Chainlink Keepers and VRF
+- [ ] Work on Frontend
+- [ ] Deploy contract and play
 
-See the [open issues](https://github.com/othneildrew/Best-README-Template/issues) for a full list of proposed features (and known issues).
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -209,17 +212,15 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 
 
 <!-- CONTACT -->
-## Contact
+## Team
 
-Your Name - [@your_twitter](https://twitter.com/your_username) - email@example.com
-
-Project Link: [https://github.com/your_username/repo_name](https://github.com/your_username/repo_name)
+Morgan Weaver, Stjepan Horvat, Solene Daviaud, Thomas Gehrmann
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
 
-<!-- ACKNOWLEDGMENTS -->
+<!-- ACKNOWLEDGMENTS 
 ## Acknowledgments
 
 Use this space to list resources you find helpful and would like to give credit to. I've included a few of my favorites to kick things off!
@@ -234,7 +235,7 @@ Use this space to list resources you find helpful and would like to give credit 
 * [React Icons](https://react-icons.github.io/react-icons/search)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
-
+-->
 
 
 <!-- MARKDOWN LINKS & IMAGES -->
@@ -251,7 +252,7 @@ Use this space to list resources you find helpful and would like to give credit 
 [license-url]: https://github.com/othneildrew/Best-README-Template/blob/master/LICENSE.txt
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
 [linkedin-url]: https://linkedin.com/in/othneildrew
-[product-screenshot]: images/screenshot.png
+[product-screenshot]: images/liquibet_pools.png
 [Next.js]: https://img.shields.io/badge/next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white
 [Next-url]: https://nextjs.org/
 [React.js]: https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB

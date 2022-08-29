@@ -4,14 +4,15 @@ pragma solidity ^0.8.9;
 import "hardhat/console.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "@chainlink/contracts/src/v0.8/KeeperCompatible.sol";
+import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "./interfaces/IERC1155Token.sol";
 import "./interfaces/IStakingProvider.sol";
+import "./VRFOracle.sol";
 
 ///@title Liquibet gambling / lottery contract
-contract Liquibet is AccessControl { 
-  bytes32 public constant KEEPER_ROLE = keccak256("KEEPER_ROLE");
+contract Liquibet is AccessControl, KeeperCompatibleInterface { 
 
   struct Pool {
     uint256 poolId;
@@ -22,6 +23,7 @@ contract Liquibet is AccessControl {
     uint256 creatorFee;
     uint256 totalPlayersCount;
     bool exists;
+    bool active;
   }
 
   struct Tier {
@@ -44,17 +46,21 @@ contract Liquibet is AccessControl {
   }
 
   uint256 public fee;  // fee should be large enough to cover contract operating expenses
+  VRFv2Consumer public VRFOracle; // randomness oracle
   IERC1155Token public token;
   mapping(uint256 => Pool) public pools;
   uint256[] public poolIds;
+  uint256 lastPriceFeedUpdate;
   mapping(uint256 => Tier[]) public tiers;    // poolId => tiers
   mapping(uint256 => mapping(uint256 => address[])) public tierPlayers;    // poolId => (tierId => player addresses)
   mapping(uint256 => uint256) public poolLiquidationPrizes;         // poolId => prize for each winning player
   mapping(uint256 => mapping(address => uint256)) public poolLotteryWinners;     // poolId => mapping(playerAddres => amount)
 
-  constructor(address _token, uint256 _fee) {
+  constructor(address _token, address _VRFContract, uint256 _fee) {
     token = IERC1155Token(_token);
+    VRFOracle = VRFv2Consumer(_VRFContract);
     fee = _fee;
+    lastPriceFeedUpdate = block.timestamp;
     
     _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
   }
@@ -77,8 +83,6 @@ contract Liquibet is AccessControl {
     require(priceFeedAddress != address(0), "Price feed address is required");
     require(stakingContractAddress != address(0), "Staking contract address is required");
     require(keeperAddress != address(0), "Keeper address is required");
-
-    _grantRole(KEEPER_ROLE, keeperAddress);
     
     // get the current price for the asset pair as the lowestPrice of the pool
     uint256 currentPrice = 20000; // TODO    
@@ -96,7 +100,8 @@ contract Liquibet is AccessControl {
       stakingInfo: stakingInfo,
       creatorFee: 0,
       totalPlayersCount: 0,
-      exists: true
+      exists: true,
+      active: true
     });
 
     uint256 newPoolId = poolIds.length + 1;
@@ -146,7 +151,7 @@ contract Liquibet is AccessControl {
 
   ///@notice performs the contract resolution phase - withdraws staked funds, performs lottery and determines liqudation winners
   ///@dev if winningPlayersCount = 0 (all players got liquidated) case not handled
-  function resolution(uint256 poolId) external onlyRole(KEEPER_ROLE) {
+  function resolution(uint256 poolId) internal {
     // check that lockin period ended
     Pool storage pool = pools[poolId];
     require(isPoolLocked(pool.startDateTime, pool.lockPeriod), "Pool locking period is still in effect");
@@ -177,13 +182,16 @@ contract Liquibet is AccessControl {
 
     // liquidations
     poolLiquidationPrizes[poolId] = getLiquidationPrize(poolId, pool.assetPair.lowestPrice);
+    
+    // mark inactive for keeper check
+    pool.active = false;
 
     // TODO if winningPlayersCount = 0 -> funds distributed to other pools and pool creator
   }
 
   ///@notice stake pool funds
   ///@dev works only for ETH
-  function stakePoolFunds(uint256 poolId) external onlyRole(KEEPER_ROLE) {
+  function stakePoolFunds(uint256 poolId) internal {
     Pool memory pool = pools[poolId];
     IStakingProvider stakingProvider = IStakingProvider(pool.stakingInfo.contractAddress);
     stakingProvider.stake{ value: pool.stakingInfo.amountStaked }();
@@ -193,7 +201,7 @@ contract Liquibet is AccessControl {
 
   ///@notice gets the price data from chainlink price feed
   ///@dev does not deal with asset decimals - TODO
-  function getPriceFeedData() external view onlyRole(KEEPER_ROLE) {
+  function getPriceFeedData() internal view {
     // foreach active pool get the asset type
     for (uint256 i = 0; i < poolIds.length; i++) {
       Pool memory pool = pools[i];
@@ -247,6 +255,7 @@ contract Liquibet is AccessControl {
 
     if (allPlayers.length > 0) {
         uint256 winnerIndex = getRandomNumber() % allPlayers.length;
+        
         return allPlayers[winnerIndex];
     }
 
@@ -285,7 +294,10 @@ contract Liquibet is AccessControl {
   }
 
   function getRandomNumber() private view returns (uint256) {
-      // TODO implement chainlink VRF
+      uint256 oracleRand = VRFOracle.s_randomWords(0);
+      if(oracleRand != 0){
+        return oracleRand;
+      }
       return uint256(blockhash(block.number - 1));
   }
 
@@ -331,4 +343,71 @@ contract Liquibet is AccessControl {
 
       return currentPrice < 0 ? 0 : uint256(currentPrice);
   }
+
+  /**
+   * @notice Checks all pools to see which need upkeep.  Check happens on every mined block. 
+   * @return upkeepNeeded signals if upkeep is needed for any of the pools
+   */
+  function checkUpkeep(bytes calldata)
+    external
+    view
+    override
+    returns (bool upkeepNeeded, bytes memory performData)
+  {
+    if(lastPriceFeedUpdate != 0 && block.timestamp + 6 hours > lastPriceFeedUpdate ){
+            upkeepNeeded = true;
+            performData = abi.encodePacked(uint256(0)); // This codes for the function to call in performUpkeep
+            return (true, performData);
+    }
+
+    for (uint256 i = 0; i < poolIds.length; i++) {
+      Pool memory pool = pools[i];
+      //determine whether to initiate staking
+      if (pool.active && pool.stakingInfo.amountStaked == 0 && block.timestamp >= pool.startDateTime - 15 seconds ) {
+            upkeepNeeded = true;
+            performData = abi.encodePacked(uint256(1)); 
+            return (true, performData);
+      }
+      // determine whether to call resolution fx
+       if (pool.active && block.timestamp >= pool.startDateTime + pool.lockPeriod - 15 seconds ) {
+            upkeepNeeded = true;
+            performData = abi.encodePacked(uint256(2)); 
+            return (true, performData);
+      }
+    }
+
+
+    upkeepNeeded = false;
+    performData = abi.encodePacked(uint256(3));
+    return (upkeepNeeded, performData);
+  }
+
+  /**
+   * @notice Called by keeper to send funds to underfunded addresses
+   * @param performData The abi encoded list of addresses to fund
+   */
+  function performUpkeep(bytes calldata performData) external override {
+   uint256 decodedValue = abi.decode(performData, (uint256));
+        if(decodedValue == 0){
+            getPriceFeedData();
+            lastPriceFeedUpdate = block.timestamp;
+        } 
+        if(decodedValue == 1){
+          for (uint256 i = 0; i < poolIds.length; i++) {
+            Pool memory pool = pools[i];
+            if (pool.active && pool.stakingInfo.amountStaked == 0 && block.timestamp >= pool.startDateTime - 15 seconds ) {
+              stakePoolFunds(pool.poolId);
+            }
+          }
+        } 
+        if(decodedValue == 2){
+          for (uint256 i = 0; i < poolIds.length; i++) {
+            Pool memory pool = pools[i];
+            if (pool.active && block.timestamp >= pool.startDateTime + pool.lockPeriod - 15 seconds ) {
+              resolution(pool.poolId);
+              pool.active = false;
+            }
+          } 
+        }
+}
 }
