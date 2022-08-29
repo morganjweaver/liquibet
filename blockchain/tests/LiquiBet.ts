@@ -179,25 +179,63 @@ describe("Liquibet contract", async () => {
       });
 
       describe("When the pool lock-in period ends", async function() {
+        let lotteryPrize: BigNumber;
+        let liquidationPrize: BigNumber;
+
         beforeEach(async () => {
           network.provider.send("evm_increaseTime", [60]);
           network.provider.send("evm_mine");
 
           const tx = await liquiBetContract.resolution(POOL_ID)
           await tx.wait();
+          
+          lotteryPrize = await liquiBetContract.poolLotteryWinners(POOL_ID, accounts[0].address);
+          liquidationPrize = await liquiBetContract.poolLiquidationPrizes(POOL_ID);
         });
 
         it("should calculate lottery prize for a player", async function() {
-          const lotteryPrize = await liquiBetContract.poolLotteryWinners(POOL_ID, accounts[0].address);
           const pool = await liquiBetContract.pools(POOL_ID);
           const apy = pool.stakingInfo[3];
           const expectedPrize = (TIER_BUYIN_PRICE / 100) * Number(apy);
+
           expect(Number(ethers.utils.formatEther(lotteryPrize))).to.eq(expectedPrize);
         });
 
         it("should calculate correct liquidation prize for each winning player", async function() {
-          const liquidationPrize = await liquiBetContract.poolLiquidationPrizes(POOL_ID);
+          //TODO should be Number(ethers.utils.formatEther(liquidationPrize)))
           expect(liquidationPrize).to.eq(TIER_BUYIN_PRICE);
+        });
+        
+        describe("When player withdraws funds", async function() {
+          let accountValue: BigNumber;
+          let txFee: BigNumber;
+
+          beforeEach(async function() {  
+            accountValue = await accounts[0].getBalance();
+
+            const tx = await liquiBetContract.withdraw(TOKEN_ID);
+            const purchaseTokenTxReceipt = await tx.wait();
+            const gasUsed = purchaseTokenTxReceipt.gasUsed;
+            const effectiveGasPrice = purchaseTokenTxReceipt.effectiveGasPrice;
+            txFee = gasUsed.mul(effectiveGasPrice);
+          });
+
+          // TODO tests won't work because contract doesn't have permission for token.burn
+          it("should transfer correct ETH amount to a player", async function() {            
+            const newAccountValue = await accounts[0].getBalance();
+            const diff = newAccountValue.sub(accountValue);
+            
+            const expectedDiff = lotteryPrize.add(liquidationPrize).sub(txFee);
+            expect(expectedDiff.sub(diff)).to.eq("0");
+          });
+          
+          it("should not allow to withdraw funds again", async function() {      
+            // TODO
+          });
+          
+          it("should burn the 1155 token", async function() {      
+            // TODO
+          });
         });
       });
     });

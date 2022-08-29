@@ -223,6 +223,7 @@ contract Liquibet is AccessControl {
     Tier memory tier = tiers[poolId][tierId];
     uint256 liquidationWinnings = isLiquidated(tier.liquidationPrice, pool.assetPair.lowestPrice) ? 0 : poolLiquidationPrizes[poolId];
 
+    console.log("liquidationWinnings: %s, lotteryWinnings: %s", liquidationWinnings, lotteryWinnings);
     require(liquidationWinnings + lotteryWinnings > 0, "You have no winnings to withdraw");
 
     poolLotteryWinners[poolId][msg.sender] = 0;
