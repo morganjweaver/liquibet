@@ -64,12 +64,8 @@ contract SFT is
         return _uris[id];
     }
 
-    function mint(
-        uint256 id,
-        uint256 amount,
-        bytes memory data
-    ) public {
-        _mint(msg.sender, id, amount, data);
+    function mint(address to, uint256 id, uint256 amount, bytes memory data) public {
+        _mint(to, id, amount, data);
     }
 
     function mintBatch(

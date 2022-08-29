@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 
+import "hardhat/console.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "@chainlink/contracts/src/v0.8/KeeperCompatible.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
@@ -26,7 +27,7 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
   }
 
   struct Tier {
-    uint256 buyInAmount;
+    uint256 buyInPrice;
     uint256 liquidationPrice;
   }
 
@@ -34,8 +35,8 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
     bytes32 name;
     address contractAddress;
     bytes32 asset;
-    uint256 apy;
-    uint amountStaked;
+    uint256 apy;   // TODO uint8
+    uint256 amountStaked;
   }
 
   struct AssetPair {
@@ -44,16 +45,16 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
     uint256 lowestPrice;
   }
 
-  uint256 fee;  // fee should be large enough to cover contract operating expenses
+  uint256 public fee;  // fee should be large enough to cover contract operating expenses
   VRFv2Consumer public VRFOracle; // randomness oracle
   IERC1155Token public token;
-  mapping(uint256 => Pool) pools;
-  uint256[] poolIds;
+  mapping(uint256 => Pool) public pools;
+  uint256[] public poolIds;
   uint256 lastPriceFeedUpdate;
-  mapping(uint256 => Tier[]) tiers;    // poolId => tiers
-  mapping(uint256 => mapping(uint256 => address[])) tierPlayers;    // poolId => (tierId => player addresses)
-  mapping(uint256 => uint256) poolLiquidationPrizes;         // poolId => prize for each winning player
-  mapping(uint256 => mapping(address => uint256)) poolLotteryWinners;     // poolId => mapping(playerAddres => amount)
+  mapping(uint256 => Tier[]) public tiers;    // poolId => tiers
+  mapping(uint256 => mapping(uint256 => address[])) public tierPlayers;    // poolId => (tierId => player addresses)
+  mapping(uint256 => uint256) public poolLiquidationPrizes;         // poolId => prize for each winning player
+  mapping(uint256 => mapping(address => uint256)) public poolLotteryWinners;     // poolId => mapping(playerAddres => amount)
 
   constructor(address _token, address _VRFContract, uint256 _fee) {
     token = IERC1155Token(_token);
@@ -64,6 +65,8 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
     _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
   }
 
+  receive() external payable {}
+  
   ///@notice create a new pool
   ///@dev tier levels are hard-coded for now
   function createPool(
@@ -101,15 +104,15 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
       active: true
     });
 
-    uint256 newPoolId = poolIds.length;
+    uint256 newPoolId = poolIds.length + 1;
     addNewPool(newPoolId, pool);
     
     // tier levels hard-coded for now
-    tiers[newPoolId][0] = Tier(50, 7);
-    tiers[newPoolId][1] = Tier(100, 12);
-    tiers[newPoolId][2] = Tier(500, 17);
-    tiers[newPoolId][3] = Tier(1000, 25);
-    tiers[newPoolId][4] = Tier(5000, 35);
+    tiers[newPoolId].push(Tier(50, 7));
+    tiers[newPoolId].push(Tier(100, 12));
+    tiers[newPoolId].push(Tier(500, 17));
+    tiers[newPoolId].push(Tier(1000, 25));
+    tiers[newPoolId].push(Tier(5000, 35));
 
     // setup a keeper that calls the stakePoolFunds function with poolId on the pool startDateTime
     // setup a keeper that calls the resolution function with poolId on the end of the lockInPeriod
@@ -130,7 +133,7 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
     // check if tier exists
     require(tierId < tiers[poolId].length, "Tier doesn't exist in the given pool");
     // check msg.value >= necessary tier level amount for pool + fee
-    require(msg.value >= amount * tiers[poolId][tierId].buyInAmount + fee, "Not enough funds for chosen tier level");
+    require(msg.value >= amount * tiers[poolId][tierId].buyInPrice + fee, "Not enough funds for chosen tier level");
 
     // mint token based on pool and tier
     uint256 tokenId = getTokenId(poolId, tierId); // tokenId = poolId_tierId
@@ -159,8 +162,19 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
 
     // lottery
     uint256 lotteryPrize = safeSubtract(totalAmount, pool.stakingInfo.amountStaked);
+
+    console.log(
+      "amount staked: %s, amount from staking: %s, lottery prize: %s", 
+      pool.stakingInfo.amountStaked, 
+      totalAmount, 
+      lotteryPrize
+    );
+
     if (lotteryPrize > 0) {
       address winner = getLotteryWinner(poolId, pool.totalPlayersCount);
+      
+      console.log("lottery winner: %s", winner);
+
       if (winner != address(0)) {
         poolLotteryWinners[poolId][winner] = lotteryPrize;
       }
@@ -181,6 +195,8 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
     Pool memory pool = pools[poolId];
     IStakingProvider stakingProvider = IStakingProvider(pool.stakingInfo.contractAddress);
     stakingProvider.stake{ value: pool.stakingInfo.amountStaked }();
+
+    // emit FundsStaked(poolId, pool.stakingInfo.asset, pool.stakingInfo.amountStaked)
   }
 
   ///@notice gets the price data from chainlink price feed
@@ -215,6 +231,7 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
     Tier memory tier = tiers[poolId][tierId];
     uint256 liquidationWinnings = isLiquidated(tier.liquidationPrice, pool.assetPair.lowestPrice) ? 0 : poolLiquidationPrizes[poolId];
 
+    console.log("liquidationWinnings: %s, lotteryWinnings: %s", liquidationWinnings, lotteryWinnings);
     require(liquidationWinnings + lotteryWinnings > 0, "You have no winnings to withdraw");
 
     poolLotteryWinners[poolId][msg.sender] = 0;
@@ -264,11 +281,12 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
       if (isLiquidated(tier.liquidationPrice, poolAssetLowestPrice)) {
         uint256 tokenSupply = token.totalSupply(tokenId);
         winningPlayersCount += tokenSupply;
-        totalLiquidatedFunds += tier.buyInAmount * tokenSupply;
+        totalLiquidatedFunds += tier.buyInPrice * tokenSupply;
       }
     }
 
     if (winningPlayersCount > 0) {
+      console.log("totalLiquidatedFunds: %s, winningPlayersCount: %s", totalLiquidatedFunds, winningPlayersCount);
       return totalLiquidatedFunds / winningPlayersCount;
     }
 
@@ -314,7 +332,7 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
   }
   
   function isPoolLocked(uint256 startDateTime, uint256 lockPeriod) private view returns(bool) {
-    return block.timestamp > startDateTime + lockPeriod;
+    return block.timestamp < startDateTime + lockPeriod;
   }
 
   ///@notice get the latest price from chainling price feed
@@ -369,27 +387,27 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
    * @param performData The abi encoded list of addresses to fund
    */
   function performUpkeep(bytes calldata performData) external override {
-   uint256 decodedValue = abi.decode(performData, (uint256));
-        if(decodedValue == 0){
-            getPriceFeedData();
-            lastPriceFeedUpdate = block.timestamp;
-        } 
-        if(decodedValue == 1){
-          for (uint256 i = 0; i < poolIds.length; i++) {
-            Pool memory pool = pools[i];
-            if (pool.active && pool.stakingInfo.amountStaked == 0 && block.timestamp >= pool.startDateTime - 15 seconds ) {
-              stakePoolFunds(pool.poolId);
-            }
-          }
-        } 
-        if(decodedValue == 2){
-          for (uint256 i = 0; i < poolIds.length; i++) {
-            Pool memory pool = pools[i];
-            if (pool.active && block.timestamp >= pool.startDateTime + pool.lockPeriod - 15 seconds ) {
-              resolution(pool.poolId);
-              pool.active = false;
-            }
-          } 
+    uint256 decodedValue = abi.decode(performData, (uint256));
+    if(decodedValue == 0){
+        getPriceFeedData();
+        lastPriceFeedUpdate = block.timestamp;
+    } 
+    if(decodedValue == 1){
+      for (uint256 i = 0; i < poolIds.length; i++) {
+        Pool memory pool = pools[i];
+        if (pool.active && pool.stakingInfo.amountStaked == 0 && block.timestamp >= pool.startDateTime - 15 seconds ) {
+          stakePoolFunds(pool.poolId);
         }
-}
+      }
+    } 
+    if(decodedValue == 2){
+      for (uint256 i = 0; i < poolIds.length; i++) {
+        Pool memory pool = pools[i];
+        if (pool.active && block.timestamp >= pool.startDateTime + pool.lockPeriod - 15 seconds ) {
+          resolution(pool.poolId);
+          pool.active = false;
+        }
+      } 
+    }
+  }
 }

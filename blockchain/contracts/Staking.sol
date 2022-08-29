@@ -9,7 +9,7 @@ import "./interfaces/IStakingProvider.sol";
 contract Staking is KeeperCompatibleInterface, IStakingProvider {
 
     address payable public admin;
-    uint256 interest_percent = 10;
+    uint256 public interest_percent = 10;
     // Example: 26 * 24 * 60 for 26-day staking period * 24 hrs/day * 60 min/hr
     uint stakingIntervalInMinutes; 
     
@@ -34,19 +34,22 @@ contract Staking is KeeperCompatibleInterface, IStakingProvider {
         _;
     }
 
-    function stake() public payable {
+    function stake() external payable {
         stakingCustomers[msg.sender] = StakingDetails(block.timestamp, msg.value);
         emit Deposit(msg.value, block.timestamp);
     }
 
-    function withdraw() public returns (uint256 amount){
-        require(stakingCustomers[msg.sender].when != 0, "Customer has no funds staked");
-        uint256 returnAmount = stakingCustomers[msg.sender].amountDeposited * interest_percent + 100 / 100;
-        require(address(this).balance > returnAmount, 
-        "Staking contract has insufficient funds for repayment!");
-        (bool result, bytes memory returnData) = (msg.sender).call{
-            value: returnAmount}("");
-        require(result == true, "Failure to withdraw ether");
+    function withdraw() external returns (uint256 amount) {
+        uint256 amountDeposited = stakingCustomers[msg.sender].amountDeposited;
+        require(amountDeposited > 0, "Customer has no funds staked");
+
+        uint256 interest = ( amountDeposited / 100) * interest_percent;
+        uint returnAmount = amountDeposited + interest;
+        require(address(this).balance > returnAmount, "Staking contract has insufficient funds for repayment!");
+        
+        stakingCustomers[msg.sender].amountDeposited = 0;
+
+        payable(msg.sender).transfer(returnAmount);
         return returnAmount;
     }
 
