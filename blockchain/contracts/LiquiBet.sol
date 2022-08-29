@@ -23,7 +23,6 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
     uint256 creatorFee;
     uint256 totalPlayersCount;
     bool exists;
-    bool active;
   }
 
   struct Tier {
@@ -100,8 +99,7 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
       stakingInfo: stakingInfo,
       creatorFee: 0,
       totalPlayersCount: 0,
-      exists: true,
-      active: true
+      exists: true
     });
 
     uint256 newPoolId = poolIds.length + 1;
@@ -129,7 +127,7 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
     Pool storage pool = pools[poolId];
     require(pool.exists, "Pool is inactive");
     // check if buy-in period is still in effect
-    require(block.timestamp <= pool.startDateTime, "Pool is locked");
+    require(block.timestamp <= pool.startDateTime, "Pool buy-in period ended");
     // check if tier exists
     require(tierId < tiers[poolId].length, "Tier doesn't exist in the given pool");
     // check msg.value >= necessary tier level amount for pool + fee
@@ -155,7 +153,7 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
   function resolution(uint256 poolId) public onlyRole(DEFAULT_ADMIN_ROLE) {
     // check that lockin period ended
     Pool storage pool = pools[poolId];
-    require(isPoolLocked(pool.startDateTime, pool.lockPeriod), "Pool locking period is still in effect");
+    require(isPoolActive(pool.startDateTime, pool.lockPeriod), "Pool locking period is still in effect");
     
     // withdraw funds from staking contract
     IStakingProvider stakingProvider = IStakingProvider(pool.stakingInfo.contractAddress);
@@ -183,9 +181,6 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
 
     // liquidations
     poolLiquidationPrizes[poolId] = getLiquidationPrize(poolId, pool.assetPair.lowestPrice);
-    
-    // mark inactive for keeper check
-    pool.active = false;
 
     // TODO if winningPlayersCount = 0 -> funds distributed to other pools and pool creator
   }
@@ -208,7 +203,7 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
     for (uint256 i = 0; i < poolIds.length; i++) {
       Pool memory pool = pools[i];
       
-      if (isPoolLocked(pool.startDateTime, pool.lockPeriod)) {
+      if (isPoolActive(pool.startDateTime, pool.lockPeriod)) {
         continue;
       }
 
@@ -333,7 +328,7 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
     return subtrahend > minuend ? 0 : minuend - subtrahend;
   }
   
-  function isPoolLocked(uint256 startDateTime, uint256 lockPeriod) private view returns(bool) {
+  function isPoolActive(uint256 startDateTime, uint256 lockPeriod) private view returns(bool) {
     return block.timestamp < startDateTime + lockPeriod;
   }
 
@@ -365,13 +360,13 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
     for (uint256 i = 0; i < poolIds.length; i++) {
       Pool memory pool = pools[i];
       //determine whether to initiate staking
-      if (pool.active && pool.stakingInfo.amountStaked == 0 && block.timestamp >= pool.startDateTime - 15 seconds ) {
+      if (isPoolActive(pool.startDateTime, pool.lockPeriod) && block.timestamp >= pool.startDateTime - 15 seconds ) {
             upkeepNeeded = true;
             performData = abi.encodePacked(uint256(1)); 
             return (true, performData);
       }
       // determine whether to call resolution fx
-       if (pool.active && block.timestamp >= pool.startDateTime + pool.lockPeriod - 15 seconds ) {
+       if (!isPoolActive(pool.startDateTime, pool.lockPeriod)) {
             upkeepNeeded = true;
             performData = abi.encodePacked(uint256(2)); 
             return (true, performData);
@@ -397,7 +392,7 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
     if(decodedValue == 1){
       for (uint256 i = 0; i < poolIds.length; i++) {
         Pool memory pool = pools[i];
-        if (pool.active && pool.stakingInfo.amountStaked == 0 && block.timestamp >= pool.startDateTime - 15 seconds ) {
+        if (isPoolActive(pool.startDateTime, pool.lockPeriod) && block.timestamp >= pool.startDateTime - 15 seconds) {
           stakePoolFunds(pool.poolId);
         }
       }
@@ -405,9 +400,8 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
     if(decodedValue == 2){
       for (uint256 i = 0; i < poolIds.length; i++) {
         Pool memory pool = pools[i];
-        if (pool.active && block.timestamp >= pool.startDateTime + pool.lockPeriod - 15 seconds ) {
+        if (isPoolActive(pool.startDateTime, pool.lockPeriod)) {
           resolution(pool.poolId);
-          pool.active = false;
         }
       } 
     }
