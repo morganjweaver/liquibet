@@ -151,7 +151,8 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
 
   ///@notice performs the contract resolution phase - withdraws staked funds, performs lottery and determines liqudation winners
   ///@dev if winningPlayersCount = 0 (all players got liquidated) case not handled
-  function resolution(uint256 poolId) internal {
+  // TODO permission grantRole(KEEPER_ROLE)
+  function resolution(uint256 poolId) public onlyRole(DEFAULT_ADMIN_ROLE) {
     // check that lockin period ended
     Pool storage pool = pools[poolId];
     require(isPoolLocked(pool.startDateTime, pool.lockPeriod), "Pool locking period is still in effect");
@@ -191,7 +192,8 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
 
   ///@notice stake pool funds
   ///@dev works only for ETH
-  function stakePoolFunds(uint256 poolId) internal {
+  // TODO permission grantRole(KEEPER_ROLE)
+  function stakePoolFunds(uint256 poolId) public onlyRole(DEFAULT_ADMIN_ROLE) {
     Pool memory pool = pools[poolId];
     IStakingProvider stakingProvider = IStakingProvider(pool.stakingInfo.contractAddress);
     stakingProvider.stake{ value: pool.stakingInfo.amountStaked }();

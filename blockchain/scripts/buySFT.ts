@@ -12,6 +12,7 @@ async function main() {
   if (process.argv.length < 4) throw new Error("SFT address and/or SFT tier/pool ID missing");
   const tokenAddress = process.argv[2];
   const poolId_tierId = process.argv[3];
+  const buyerAddress = process.argv[4];
   console.log(`Attaching token contract interface to address ${tokenAddress}`);
   const tokenContract: SFT = new Contract(
     tokenAddress,
@@ -20,7 +21,7 @@ async function main() {
   ) as SFT;
 
   console.log(`Buying SFT ...`);
-  const tx = await tokenContract.mint(poolId_tierId, 1, "");
+  const tx = await tokenContract.mint(buyerAddress, poolId_tierId, 1, "");
   console.log("Awaiting confirmations");
   await tx.wait();
   console.log(`Transaction completed. Hash: ${tx.hash}`);
