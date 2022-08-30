@@ -45,6 +45,7 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
     bytes32 name;              // do we need name, can we get all the info from the chainlink contract?
     address priceFeedAddress;  // chainlink price feed data - is it in a form of a contract address?
     uint256 lowestPrice;
+    uint256 referencePrice;
   }
 
   uint256 public fee;  // fee should be large enough to cover contract operating expenses
@@ -93,7 +94,7 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
     
     // get the current price for the asset pair as the lowestPrice of the pool
     uint256 currentPrice = 20000; // TODO    
-    AssetPair memory assetPair = AssetPair(assetPairName, priceFeedAddress, currentPrice);
+    AssetPair memory assetPair = AssetPair(assetPairName, priceFeedAddress, currentPrice, currentPrice);
 
     // staking provider setup
     StakingInfo memory stakingInfo = setupStaking(stakingContractAddress);
@@ -115,11 +116,11 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
     addNewPool(newPoolId, pool);
     
     // tier levels hard-coded for now
-    tiers[newPoolId].push(Tier(50, 7));
-    tiers[newPoolId].push(Tier(100, 12));
-    tiers[newPoolId].push(Tier(500, 17));
-    tiers[newPoolId].push(Tier(1000, 25));
-    tiers[newPoolId].push(Tier(5000, 35));
+    tiers[newPoolId].push(Tier(3e16 wei, 7));     // 0.03 eth
+    tiers[newPoolId].push(Tier(6e16 wei, 12));    // 0.06 eth
+    tiers[newPoolId].push(Tier(30e16 wei, 19));   // 0.3 eth
+    tiers[newPoolId].push(Tier(90e16 wei, 28));   // 0.9 eth
+    tiers[newPoolId].push(Tier(300e16 wei, 38));  // 3 eth
 
     // setup a keeper that calls the stakePoolFunds function with poolId on the pool startDateTime
     // setup a keeper that calls the resolution function with poolId on the end of the lockInPeriod
@@ -198,7 +199,6 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
 
   ///@notice stake pool funds
   ///@dev works only for ETH
-  // TODO permission grantRole(KEEPER_ROLE)
   function stakePoolFunds(uint256 poolId) public onlyRole(DEFAULT_ADMIN_ROLE) {
     Pool memory pool = pools[poolId];
     IStakingProvider stakingProvider = IStakingProvider(pool.stakingInfo.contractAddress);
@@ -404,6 +404,7 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
       for (uint256 i = 0; i < poolIds.length; i++) {
         Pool storage pool = pools[i];
         if (!pool.lockInExecuted && isPoolInLockinPhase(pool.startDateTime, pool.lockPeriod)) {
+          pool.assetPair.referencePrice = getLatestPrice(pool.assetPair.priceFeedAddress);
           stakePoolFunds(pool.poolId);
           pool.lockInExecuted = true;
         }
