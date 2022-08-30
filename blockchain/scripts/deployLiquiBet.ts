@@ -6,7 +6,6 @@ import { VRFv2Consumer } from "../typechain-types";
 import {
   getSigner,
   checkBalance,
-  convertStringArrayToBytes32,
 } from "../helpers/utils";
 
 async function main() {
@@ -14,9 +13,8 @@ async function main() {
   if (!checkBalance(signer)) {
     return;
   }
-  if (process.argv.length < 4) throw new Error("Token address and/or fee (in wei) missing");
-  const tokenAddress = process.argv[2];
-  const fee = process.argv[3];
+  if (process.argv.length < 3) throw new Error("Fee (in wei) missing");
+  const fee = process.argv[2];
   
   // First deploy randomness oracle
   console.log("Deploying Randomness contract");
@@ -49,11 +47,16 @@ async function main() {
     LiquiBetJSON.bytecode,
     signer
   );
+
+  const tokenUpdateInterval = 60 * 60 * 24;
+  const priceFeedAddress = "0xa39434a63a52e749f02807ae27335515ba4b07f7";
   const LiquiBetContract = await LiquiBetFactory.deploy(
-   tokenAddress,
-   VRFContract.address,
-   fee
+    tokenUpdateInterval,
+    priceFeedAddress,
+    VRFContract.address,
+    fee
   );
+
   console.log("Awaiting confirmation on LiquiBet deployment");
   await LiquiBetContract.deployed();
   console.log("Completed LiquiBet deployment");

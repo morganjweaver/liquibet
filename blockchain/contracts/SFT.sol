@@ -64,7 +64,7 @@ contract SFT is
         return _uris[id];
     }
 
-    function mint(address to, uint256 id, uint256 amount, bytes memory data) public {
+    function mint(address to, uint256 id, uint256 amount, bytes memory data) public onlyOwner {
         _mint(to, id, amount, data);
     }
 
@@ -73,11 +73,12 @@ contract SFT is
         uint256[] memory ids,
         uint256[] memory amounts,
         bytes memory data
-    ) public {
+    ) public
+      onlyOwner {
         _mintBatch(to, ids, amounts, data);
     }
 
-    function setTokenUri(uint256 id, string memory newUri) public {
+    function setTokenUri(uint256 id, string memory newUri) public onlyOwner {
         _uris[id] = newUri;
     }
 

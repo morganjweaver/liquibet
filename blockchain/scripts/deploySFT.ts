@@ -4,7 +4,6 @@ import * as SFTJson from "../artifacts/contracts/SFT.sol/SFT.json";
 import {
   getSigner,
   checkBalance,
-  convertStringArrayToBytes32,
 } from "../helpers/utils";
 
 async function main() {
