@@ -90,7 +90,7 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
     address stakingContractAddress
     ) external {
 
-    require(startDateTime > block.timestamp + 2 days, "Minimal buyin period is two days");
+    // require(startDateTime > block.timestamp + 2 days, "Minimal buyin period is two days");
     require(assetPairName != "", "Asset pair name is required");
     require(priceFeedAddress != address(0), "Price feed address is required");
     require(stakingContractAddress != address(0), "Staking contract address is required");

@@ -27,7 +27,7 @@ async function main() {
   console.log("Awaiting confirmations");
   await StakingContract.deployed();
   console.log("Completed");
-  console.log(`SFT contract deployed at ${StakingContract.address}`);
+  console.log(`Staking contract deployed at ${StakingContract.address}`);
   console.log(`\n\n ***REMINDER: Please send a small amount of ETH to the contract for staking returns.***`)
 }
 
