@@ -395,11 +395,10 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
    */
   function performUpkeep(bytes calldata performData) external override {
     uint256 decodedValue = abi.decode(performData, (uint256));
-    if(decodedValue == 0){
+    if(decodedValue == 0 && lastPriceFeedUpdate != 0 && block.timestamp + 6 hours > lastPriceFeedUpdate){
       getPriceFeedData();
       lastPriceFeedUpdate = block.timestamp;
-    } 
-    if(decodedValue == 1){
+    } else if(decodedValue == 1){
       for (uint256 i = 0; i < poolIds.length; i++) {
         Pool storage pool = pools[i];
         if (!pool.lockInExecuted && isPoolInLockinPhase(pool.startDateTime, pool.lockPeriod)) {
@@ -408,8 +407,7 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
           pool.lockInExecuted = true;
         }
       }
-    } 
-    if(decodedValue == 2){
+    } else if(decodedValue == 2){
       for (uint256 i = 0; i < poolIds.length; i++) {
         Pool memory pool = pools[i];
         if (!pool.resolved && !isPoolActive(pool.startDateTime, pool.lockPeriod)) {

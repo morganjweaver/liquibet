@@ -1,4 +1,4 @@
-# LiquiBet: A Mutating NFT Asset Derivatives with Gambling and Lottery Mechanics
+# LiquiBet: A Dynamic SFT Asset Derivative with Gambling and Lottery Mechanics
 
 Chainlink x Encode Hackathon 2022
 

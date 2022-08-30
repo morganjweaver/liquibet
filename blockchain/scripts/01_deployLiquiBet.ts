@@ -36,7 +36,8 @@ async function main() {
   await LiquiBetContract.deployed();
   console.log("Completed LiquiBet deployment");
   console.log(`LiquiBet contract deployed at ${LiquiBetContract.address}`);
-  
+  signer.sendTransaction({ to: LiquiBetContract.address, value: ethers.utils.parseEther(".1")});
+
   console.log(`Please register contract${LiquiBetContract.address} at https://keepers.chain.link/goerli as Custom Logic Upkeep`);
 }
 
