@@ -1,8 +1,8 @@
 import { Contract } from "ethers"; // Hardhat for testing
 import "dotenv/config";
-import * as SFTJson from "../artifacts/contracts/SFT.sol/SFT.json";
-import { SFT } from "../typechain-types";
-import { checkBalance, getSigner } from "../helpers/utils";
+import * as SFTJson from "../../artifacts/contracts/SFT.sol/SFT.json";
+import { SFT } from "../../typechain-types";
+import { checkBalance, getSigner } from "../../helpers/utils";
 
 async function main() {
   const signer = getSigner();
