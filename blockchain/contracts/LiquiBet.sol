@@ -61,11 +61,15 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
 
   constructor(
     uint256 _tokenUpdateInterval, 
-    address _priceFeed, 
+    address _tokenPriceFeed, 
     address _VRFContract, 
     uint256 _fee
   ) {
-    token = new SFT(_tokenUpdateInterval, _priceFeed);
+    // TODO for now, liquibet contract deploys this default sft token
+    // in the future, we should handle different price feeds for various assets 
+    // solutions: deploy new token on create pool, have sft contract handle different price feeds etc.
+    token = new SFT(_tokenUpdateInterval, _tokenPriceFeed);
+
     VRFOracle = VRFv2Consumer(_VRFContract);
     fee = _fee;
     lastPriceFeedUpdate = block.timestamp;
@@ -273,7 +277,7 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
     return StakingInfo(name, stakingContractAddress, asset, apy, 0);
   }
 
-  function getLiquidationPrize(uint256 poolId, uint256 poolAssetLowestPrice) private returns (uint256) { 
+  function getLiquidationPrize(uint256 poolId, uint256 poolAssetLowestPrice) private view returns (uint256) { 
     
     uint256 winningPlayersCount;
     uint256 totalLiquidatedFunds;
