@@ -23,7 +23,10 @@ const config: HardhatUserConfig = {
       },
     },
   },
-  paths: { tests: "tests" },
+  paths: { 
+    tests: "tests",
+    sources: "./contracts",
+ },
   networks: {
     goerli: {
       url: process.env.GOERLI_URL || "",
