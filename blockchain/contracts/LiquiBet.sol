@@ -200,10 +200,9 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
   ///@dev works only for ETH
   // TODO permission grantRole(KEEPER_ROLE)
   function stakePoolFunds(uint256 poolId) public onlyRole(DEFAULT_ADMIN_ROLE) {
-    Pool storage pool = pools[poolId];
+    Pool memory pool = pools[poolId];
     IStakingProvider stakingProvider = IStakingProvider(pool.stakingInfo.contractAddress);
     stakingProvider.stake{ value: pool.stakingInfo.amountStaked }();
-    pool.lockInExecuted = true;
     // emit FundsStaked(poolId, pool.stakingInfo.asset, pool.stakingInfo.amountStaked)
   }
 
@@ -214,13 +213,11 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
     for (uint256 i = 0; i < poolIds.length; i++) {
       Pool memory pool = pools[i];
       
-      if (isPoolActive(pool.startDateTime, pool.lockPeriod)) {
-        continue;
-      }
-
-      uint256 currentPrice = getLatestPrice(pool.assetPair.priceFeedAddress);
-      if (pool.assetPair.lowestPrice > currentPrice) {
-        pool.assetPair.lowestPrice = currentPrice;
+      if (isPoolInLockinPhase(pool.startDateTime, pool.lockPeriod)) {
+        uint256 currentPrice = getLatestPrice(pool.assetPair.priceFeedAddress);
+        if (pool.assetPair.lowestPrice > currentPrice) {
+          pool.assetPair.lowestPrice = currentPrice;
+        }
       }
     }
   }
@@ -367,24 +364,24 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
     returns (bool upkeepNeeded, bytes memory performData)
   {
     if(lastPriceFeedUpdate != 0 && block.timestamp + 6 hours > lastPriceFeedUpdate ){
-            upkeepNeeded = true;
-            performData = abi.encodePacked(uint256(0)); // This codes for the function to call in performUpkeep
-            return (true, performData);
+      upkeepNeeded = true;
+      performData = abi.encodePacked(uint256(0)); // This codes for the function to call in performUpkeep
+      return (true, performData);
     }
 
     for (uint256 i = 0; i < poolIds.length; i++) {
       Pool memory pool = pools[i];
       //determine whether to initiate staking
       if (!pool.lockInExecuted && isPoolInLockinPhase(pool.startDateTime, pool.lockPeriod)) {
-            upkeepNeeded = true;
-            performData = abi.encodePacked(uint256(1)); 
-            return (true, performData);
+        upkeepNeeded = true;
+        performData = abi.encodePacked(uint256(1)); 
+        return (true, performData);
       }
       // determine whether to call resolution fx
-       if (!pool.resolved && !isPoolActive(pool.startDateTime, pool.lockPeriod)) {
-            upkeepNeeded = true;
-            performData = abi.encodePacked(uint256(2)); 
-            return (true, performData);
+      if (!pool.resolved && !isPoolActive(pool.startDateTime, pool.lockPeriod)) {
+        upkeepNeeded = true;
+        performData = abi.encodePacked(uint256(2)); 
+        return (true, performData);
       }
     }
 
@@ -400,14 +397,15 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
   function performUpkeep(bytes calldata performData) external override {
     uint256 decodedValue = abi.decode(performData, (uint256));
     if(decodedValue == 0){
-        getPriceFeedData();
-        lastPriceFeedUpdate = block.timestamp;
+      getPriceFeedData();
+      lastPriceFeedUpdate = block.timestamp;
     } 
     if(decodedValue == 1){
       for (uint256 i = 0; i < poolIds.length; i++) {
-        Pool memory pool = pools[i];
+        Pool storage pool = pools[i];
         if (!pool.lockInExecuted && isPoolInLockinPhase(pool.startDateTime, pool.lockPeriod)) {
           stakePoolFunds(pool.poolId);
+          pool.lockInExecuted = true;
         }
       }
     } 
