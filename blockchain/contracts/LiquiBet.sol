@@ -11,7 +11,6 @@ import "./interfaces/IERC1155Token.sol";
 import "./interfaces/IStakingProvider.sol";
 import "./VRFOracle.sol";
 import "./SFT.sol";
-import "./UpkeepIDConsumer.sol";
 
 ///@title Liquibet gambling / lottery contract
 contract Liquibet is AccessControl, KeeperCompatibleInterface { 
