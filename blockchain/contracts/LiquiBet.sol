@@ -93,7 +93,7 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
     require(keeperAddress != address(0), "Keeper address is required");
     
     // get the current price for the asset pair as the lowestPrice of the pool
-    uint256 currentPrice = 20000; // TODO    
+    uint256 currentPrice = getLatestPrice(priceFeedAddress);    
     AssetPair memory assetPair = AssetPair(assetPairName, priceFeedAddress, currentPrice, currentPrice);
 
     // staking provider setup
