@@ -1,4 +1,4 @@
-import { Contract, ethers } from "ethers"; // Hardhat for testing
+import { Contract } from "ethers"; // Hardhat for testing
 import "dotenv/config";
 import * as SFTJson from "../artifacts/contracts/SFT.sol/SFT.json";
 import { SFT } from "../typechain-types";
@@ -9,10 +9,11 @@ async function main() {
   if (!checkBalance(signer)) {
     return;
   }
-  if (process.argv.length < 4) throw new Error("SFT address and/or SFT tier/pool ID missing");
+  if (process.argv.length < 5) throw new Error("SFT address and/or SFT tier/pool ID missing");
   const tokenAddress = process.argv[2];
   const poolId_tierId = process.argv[3];
   const buyerAddress = process.argv[4];
+  
   console.log(`Attaching token contract interface to address ${tokenAddress}`);
   const tokenContract: SFT = new Contract(
     tokenAddress,

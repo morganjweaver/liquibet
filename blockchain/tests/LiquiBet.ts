@@ -37,7 +37,6 @@ describe("Liquibet contract", async () => {
     accounts = await ethers.getSigners();
     keeperAddress = accounts[0].address;  // deployer account has admin and keeper role granted
 
-    const tokenContractFactory = await ethers.getContractFactory("SFT"); 
     const liquiBetContractFactory = await ethers.getContractFactory("Liquibet");
     const aggregatorContractFactory = await ethers.getContractFactory("MockV3Aggregator");
     const vrfContractFactory = await ethers.getContractFactory("VRFCoordinatorV2Mock");
@@ -47,12 +46,6 @@ describe("Liquibet contract", async () => {
       ASSET_INITIAL_PRICE
     ) as MockV3Aggregator;
     await aggregatorContract.deployed();
-
-    tokenContract = await tokenContractFactory.deploy(
-      TOKEN_UPDATE_INTERVAL,
-      aggregatorContract.address
-    ) as SFT;
-    await tokenContract.deployed();
     
     const BASE_FEE = "100000000000000000"
     const GAS_PRICE_LINK = "1000000000" // 0.000000001 LINK per gas
@@ -60,7 +53,7 @@ describe("Liquibet contract", async () => {
       BASE_FEE,
       GAS_PRICE_LINK
     ) as VRFCoordinatorV2Mock;
-    await tokenContract.deployed();
+    await vrfContract.deployed();
     
     const fundAmount: BigNumber = BigNumber.from(1000000000000);
     const vrfTx: ContractTransaction = await vrfContract.createSubscription();
@@ -72,11 +65,16 @@ describe("Liquibet contract", async () => {
     await vrfContract.fundSubscription(subscriptionId, fundAmount)
 
     liquiBetContract = await liquiBetContractFactory.deploy(
-      tokenContract.address,
+      TOKEN_UPDATE_INTERVAL,
+      aggregatorContract.address, 
       vrfContract.address,
       ethers.utils.parseEther(LIQUIBET_CONTRACT_FEE.toFixed(18)),
     ) as Liquibet;
     await liquiBetContract.deployed();
+    
+    const tokenAddress = await liquiBetContract.token();
+    const tokenFactory = await ethers.getContractFactory("SFT");
+    tokenContract = tokenFactory.attach(tokenAddress) as SFT;
     
     const stakingContractFactory = await ethers.getContractFactory("Staking");
     stakingContract = await stakingContractFactory.deploy(10) as Staking;
@@ -104,10 +102,6 @@ describe("Liquibet contract", async () => {
     });
 
     it("should use valid ERC1155 token", async function() {
-      const liquiBetTokenContract = await liquiBetContract.token();
-      const tokenContractFactory = await ethers.getContractFactory("SFT");
-      const tokenContract = await tokenContractFactory.attach(liquiBetTokenContract);
-
       const [tier1, tier5, initialPrice] = await Promise.all([
         tokenContract.TIER_1(),
         tokenContract.TIER_5(),

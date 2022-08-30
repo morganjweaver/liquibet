@@ -5,7 +5,6 @@ import { Staking } from "../typechain-types/contracts/Staking";
 import {
   getSigner,
   checkBalance,
-  convertStringArrayToBytes32,
 } from "../helpers/utils";
 
 async function main() {

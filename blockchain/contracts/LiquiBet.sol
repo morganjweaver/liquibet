@@ -10,6 +10,7 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "./interfaces/IERC1155Token.sol";
 import "./interfaces/IStakingProvider.sol";
 import "./VRFOracle.sol";
+import "./SFT.sol";
 
 ///@title Liquibet gambling / lottery contract
 contract Liquibet is AccessControl, KeeperCompatibleInterface { 
@@ -48,7 +49,7 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
 
   uint256 public fee;  // fee should be large enough to cover contract operating expenses
   VRFv2Consumer public VRFOracle; // randomness oracle
-  IERC1155Token public token;
+  SFT public token;
   mapping(uint256 => Pool) public pools;
   uint256[] public poolIds;
   uint256 lastPriceFeedUpdate;
@@ -57,8 +58,13 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
   mapping(uint256 => uint256) public poolLiquidationPrizes;         // poolId => prize for each winning player
   mapping(uint256 => mapping(address => uint256)) public poolLotteryWinners;     // poolId => mapping(playerAddres => amount)
 
-  constructor(address _token, address _VRFContract, uint256 _fee) {
-    token = IERC1155Token(_token);
+  constructor(
+    uint256 _tokenUpdateInterval, 
+    address _priceFeed, 
+    address _VRFContract, 
+    uint256 _fee
+  ) {
+    token = new SFT(_tokenUpdateInterval, _priceFeed);
     VRFOracle = VRFv2Consumer(_VRFContract);
     fee = _fee;
     lastPriceFeedUpdate = block.timestamp;
