@@ -30,11 +30,9 @@ describe("Liquibet contract", async () => {
   const lockPeriod = 10;
   const assetPairName = "ETHUSD";
   let stakingContract: Staking;
-  let keeperAddress = ""; //TODO keeper mock address;
   
   beforeEach(async () => {
     accounts = await ethers.getSigners();
-    keeperAddress = accounts[0].address;  // deployer account has admin and keeper role granted
     
     ({
       aggregatorContract,
@@ -48,8 +46,7 @@ describe("Liquibet contract", async () => {
       lockPeriod,
       ethers.utils.formatBytes32String(assetPairName),
       aggregatorContract.address,
-      stakingContract.address,
-      keeperAddress
+      stakingContract.address
     );
 
     await tx.wait();
