@@ -1,6 +1,5 @@
 import { ethers, Contract } from "ethers"; // Hardhat for testing
 import "dotenv/config";
-import * as LiquiBetJSON from "../artifacts/contracts/LiquiBet.sol/LiquiBet.json";
 import * as VRFJSON from "../artifacts/contracts/VRFOracle.sol/VRFv2Consumer.json";
 import { VRFv2Consumer } from "../typechain-types";
 import {
