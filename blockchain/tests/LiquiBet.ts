@@ -12,7 +12,7 @@ import { BigNumber, ContractReceipt, ContractTransaction } from "ethers";
 import { addSeconds, toSeconds } from "../helpers/dates";
 
 const TOKEN_UPDATE_INTERVAL = 100;
-const LIQUIBET_CONTRACT_FEE = 100;
+const LIQUIBET_CONTRACT_FEE = 0.1;
 
 const ASSET_DECIMALS: string = `18`;
 const ASSET_INITIAL_PRICE: string = `200000000000000000000`;
@@ -30,11 +30,9 @@ describe("Liquibet contract", async () => {
   const lockPeriod = 10;
   const assetPairName = "ETHUSD";
   let stakingContract: Staking;
-  let keeperAddress = ""; //TODO keeper mock address;
   
   beforeEach(async () => {
     accounts = await ethers.getSigners();
-    keeperAddress = accounts[0].address;  // deployer account has admin and keeper role granted
     
     ({
       aggregatorContract,
@@ -48,8 +46,7 @@ describe("Liquibet contract", async () => {
       lockPeriod,
       ethers.utils.formatBytes32String(assetPairName),
       aggregatorContract.address,
-      stakingContract.address,
-      keeperAddress
+      stakingContract.address
     );
 
     await tx.wait();
@@ -87,22 +84,26 @@ describe("Liquibet contract", async () => {
     let accountValue: BigNumber;
     let txFee: BigNumber;
     let tokensEarned: BigNumber;
+    let tierBuyinPrice = 0;
+    let totalBuyinPrice = 0;
 
     const TIER_ID = 0;
     const TOKEN_ID = 10;
-    const TIER_BUYIN_PRICE = 50;
-    const TOTAL_BUYIN_PRICE = TIER_BUYIN_PRICE + LIQUIBET_CONTRACT_FEE;
-    const TIER_LIQUIDATION_PRICE = 7;
     const TOKENS_AMOUNT = 1;
 
     beforeEach(async () => {
       accountValue = await accounts[0].getBalance();
+
+      const tier = await liquiBetContract.tiers(POOL_ID, TIER_ID);
+      tierBuyinPrice = Number(ethers.utils.formatEther(tier[0]));
+      totalBuyinPrice = tierBuyinPrice + LIQUIBET_CONTRACT_FEE;
+      
       const tx = await liquiBetContract.buyIn(
         POOL_ID,
         TIER_ID,
         TOKENS_AMOUNT,
         {
-          value: ethers.utils.parseEther(TOTAL_BUYIN_PRICE.toFixed(0))
+          value: ethers.utils.parseEther(totalBuyinPrice.toFixed(0))
         }  
       );
       const purchaseTokenTxReceipt = await tx.wait();
@@ -116,7 +117,7 @@ describe("Liquibet contract", async () => {
       const newAccountValue = await accounts[0].getBalance();
       const diff = accountValue.sub(newAccountValue);
       const expectedDiff = ethers.utils
-        .parseEther(TOTAL_BUYIN_PRICE.toFixed(0))
+        .parseEther(totalBuyinPrice.toFixed(0))
         .add(txFee);
       expect(expectedDiff.sub(diff)).to.eq("0");
     });
@@ -143,7 +144,7 @@ describe("Liquibet contract", async () => {
     it("pool amount to be staked incresed for correct value", async function() {
       const pool = await liquiBetContract.pools(POOL_ID);
       const amountStaked = pool.stakingInfo[4];
-      expect(Number(ethers.utils.formatEther(amountStaked))).to.eq(TIER_BUYIN_PRICE);
+      expect(Number(ethers.utils.formatEther(amountStaked))).to.eq(tierBuyinPrice);
     });
     
     describe("When the pool buy-in period ends", async function() {
@@ -170,14 +171,14 @@ describe("Liquibet contract", async () => {
         it("should calculate lottery prize for a player", async function() {
           const pool = await liquiBetContract.pools(POOL_ID);
           const apy = pool.stakingInfo[3];
-          const expectedPrize = (TIER_BUYIN_PRICE / 100) * Number(apy);
+          const expectedPrize = (tierBuyinPrice / 100) * Number(apy);
 
           expect(Number(ethers.utils.formatEther(lotteryPrize))).to.eq(expectedPrize);
         });
 
         it("should calculate correct liquidation prize for each winning player", async function() {
           //TODO should be Number(ethers.utils.formatEther(liquidationPrize)))
-          expect(liquidationPrize).to.eq(TIER_BUYIN_PRICE);
+          expect(liquidationPrize).to.eq(tierBuyinPrice);
         });
         
         describe("When player withdraws funds", async function() {
