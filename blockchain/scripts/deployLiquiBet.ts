@@ -24,7 +24,7 @@ async function main() {
     signer
   );
   const VRFContract = await VRFFactory.deploy(
-   process.env.VRF_SUBSCRIPTION_ID
+    process.env.VRF_SUBSCRIPTION_ID
   );
   console.log("Awaiting confirmation on VRF Oracle deployment");
   await VRFContract.deployed();

@@ -1,11 +1,11 @@
 import { ethers } from "ethers"; // Hardhat for testing
 import "dotenv/config";
-import * as Staking from "../artifacts/contracts/Staking.sol/Staking.json";
+import * as Staking from "../../artifacts/contracts/Staking.sol/Staking.json";
 import {
   getSigner,
   checkBalance,
   convertStringArrayToBytes32,
-} from "../helpers/utils";
+} from "../../helpers/utils";
 
 async function main() {
   const signer = getSigner();

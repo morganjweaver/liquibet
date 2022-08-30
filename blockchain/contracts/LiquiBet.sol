@@ -69,7 +69,7 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
     VRFOracle = VRFv2Consumer(_VRFContract);
     fee = _fee;
     lastPriceFeedUpdate = block.timestamp;
-    
+
     _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
   }
 
@@ -77,20 +77,19 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
   
   ///@notice create a new pool
   ///@dev tier levels are hard-coded for now
+  /// TODO only admin can call for now
   function createPool(
     uint256 startDateTime, 
     uint256 lockPeriod,
     bytes32 assetPairName,
     address priceFeedAddress,
-    address stakingContractAddress,
-    address keeperAddress
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    address stakingContractAddress
+    ) external {
 
     require(startDateTime > block.timestamp + 2 days, "Minimal buyin period is two days");
     require(assetPairName != "", "Asset pair name is required");
     require(priceFeedAddress != address(0), "Price feed address is required");
     require(stakingContractAddress != address(0), "Staking contract address is required");
-    require(keeperAddress != address(0), "Keeper address is required");
     
     // get the current price for the asset pair as the lowestPrice of the pool
     uint256 currentPrice = getLatestPrice(priceFeedAddress);    
