@@ -149,6 +149,40 @@ describe("Liquibet contract", async () => {
         await stakingTx.wait();
       });
 
+      // TODO: Debug
+      it("should return true + 1 in callData when buy-in over, funds need staking, and checkUpkeep is routinely called", async function()  {
+        const { upkeepNeeded, performData } = await liquiBetContract.checkUpkeep([]);
+        expect(upkeepNeeded).to.be.true;
+        const returnData = ethers.utils.parseBytes32String(performData);
+        console.log("\n\n\nTESTING KEEPER!!*****************************************")
+        console.log(returnData);
+        const exp = ethers.utils.defaultAbiCoder.decode(['string'], performData);
+        console.log(`AS STRING: ${exp}`);
+
+      });
+
+      // TODO: Debug
+      it("should return true + 0 in callData when price feeds need updating during lock-in and checkUpkeep is routinely called", async function()  {
+        const { upkeepNeeded, performData } = await liquiBetContract.checkUpkeep([]);
+        expect(upkeepNeeded).to.be.true;
+        const returnData = ethers.utils.parseBytes32String(performData);
+        console.log("\n\n\nTESTING KEEPER!!*****************************************")
+        console.log(returnData);
+        const exp = ethers.utils.defaultAbiCoder.decode(['string'], performData);
+        console.log(`AS STRING: ${exp}`);
+
+      });
+
+      // TODO: debug
+      it("should call performUpkeep and update price feed when checkUpkeep returns true + 0", async function()  {
+        const tx = await liquiBetContract.performUpkeep(ethers.utils.formatBytes32String("0"));
+        const receipt = await tx.wait();
+        receipt.logs.forEach((log) => {
+           expect(log).not.to.be.undefined;
+        });
+        // How to get at contract's lastPriceFeedUpdate var?
+
+      });
       describe("When the pool lock-in period ends", async function() {
         let lotteryPrize: BigNumber;
         let liquidationPrize: BigNumber;
@@ -170,6 +204,30 @@ describe("Liquibet contract", async () => {
           const expectedPrize = (TIER_BUYIN_PRICE / 100) * Number(apy);
 
           expect(Number(ethers.utils.formatEther(lotteryPrize))).to.eq(expectedPrize);
+        });
+
+        // TODO: Debug
+        it("should return true + 2 in callData when lock-in over and checkUpkeep is routinely called", async function()  {
+          const { upkeepNeeded, performData } = await liquiBetContract.checkUpkeep([]);
+          expect(upkeepNeeded).to.be.true;
+          const returnData = ethers.utils.parseBytes32String(performData);
+          expect(returnData).to.eq("2");
+          console.log("\n\n\nTESTING KEEPER!!*****************************************")
+          console.log(returnData);
+          const exp = ethers.utils.defaultAbiCoder.decode(['string'], performData);
+          console.log(`AS STRING: ${exp}`);
+
+        });
+
+        // TODO: Debug
+        it("should call performUpkeep with true + 2 and call resolution function", async function()  {
+          const tx = await liquiBetContract.performUpkeep(ethers.utils.formatBytes32String("2"));
+          const receipt = await tx.wait();
+          receipt.logs.forEach((log) => {
+             expect(log).not.to.be.undefined;
+          });
+          // How to get at contract's lastPriceFeedUpdate var?
+
         });
 
         it("should calculate correct liquidation prize for each winning player", async function() {
@@ -209,7 +267,16 @@ describe("Liquibet contract", async () => {
           });
         });
       });
+     
+      // when checkUpkeep is called, and pool not resolved and pool no longer locked in, returns true and abi.encodePacked(uint256(2));
+      // When checkUpkeep is called, 6 hrs has NOT elapsed, pool is locked, and resolved, return FALSE and (2)
+      // When checkUpkeep is called with true + 2, calls relolution function if pool not resolved and no longer active
     });
+     // When checkUpkeep is called, and >6h has elapsed, should return TRUE + abi.encodePacked(uint256(0));
+      // When checkUpkeep is called, and lockin not started but lockin in phase, stake gambling buy-ins by returning TRUE and abi.encodePacked(uint256(1));
+      // when checkUpleep is called, does NOT return true if still in buy-in period
+      // When checkUpkeep is called with true + 0 calldata, calls getPriceFeedData AND updates timestamp
+      // When checkUpkeep is called with true + 1, calls stakePoolFunds on ALL pools needing staking
   });
 });
 
