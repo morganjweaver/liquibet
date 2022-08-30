@@ -24,7 +24,6 @@ describe("Liquibet contract", async () => {
   let liquiBetContract: Liquibet;
   let aggregatorContract: MockV3Aggregator;
   let accounts: SignerWithAddress[];
-  let vrfContract: VRFCoordinatorV2Mock;
   
   const now = new Date();
   const startDateTime = toSeconds(addSeconds(now, 30)); 
@@ -36,52 +35,13 @@ describe("Liquibet contract", async () => {
   beforeEach(async () => {
     accounts = await ethers.getSigners();
     keeperAddress = accounts[0].address;  // deployer account has admin and keeper role granted
-
-    const liquiBetContractFactory = await ethers.getContractFactory("Liquibet");
-    const aggregatorContractFactory = await ethers.getContractFactory("MockV3Aggregator");
-    const vrfContractFactory = await ethers.getContractFactory("VRFCoordinatorV2Mock");
     
-    aggregatorContract = await aggregatorContractFactory.deploy(
-      ASSET_DECIMALS,
-      ASSET_INITIAL_PRICE
-    ) as MockV3Aggregator;
-    await aggregatorContract.deployed();
-    
-    const BASE_FEE = "100000000000000000"
-    const GAS_PRICE_LINK = "1000000000" // 0.000000001 LINK per gas
-    vrfContract = await vrfContractFactory.deploy(
-      BASE_FEE,
-      GAS_PRICE_LINK
-    ) as VRFCoordinatorV2Mock;
-    await vrfContract.deployed();
-    
-    const fundAmount: BigNumber = BigNumber.from(1000000000000);
-    const vrfTx: ContractTransaction = await vrfContract.createSubscription();
-    const txReceipt: ContractReceipt = await vrfTx.wait(1);
-  
-    if (!txReceipt.events) return;
-
-    const subscriptionId = ethers.BigNumber.from(txReceipt.events[0].topics[1])
-    await vrfContract.fundSubscription(subscriptionId, fundAmount)
-
-    liquiBetContract = await liquiBetContractFactory.deploy(
-      TOKEN_UPDATE_INTERVAL,
-      aggregatorContract.address, 
-      vrfContract.address,
-      ethers.utils.parseEther(LIQUIBET_CONTRACT_FEE.toFixed(18)),
-    ) as Liquibet;
-    await liquiBetContract.deployed();
-    
-    const tokenAddress = await liquiBetContract.token();
-    const tokenFactory = await ethers.getContractFactory("SFT");
-    tokenContract = tokenFactory.attach(tokenAddress) as SFT;
-    
-    const stakingContractFactory = await ethers.getContractFactory("Staking");
-    stakingContract = await stakingContractFactory.deploy(10) as Staking;
-    await stakingContract.deployed();
-
-    // fund the staking contract
-    accounts[0].sendTransaction({ to: stakingContract.address, value: ethers.utils.parseEther("10.0")});
+    ({
+      aggregatorContract,
+      liquiBetContract,
+      tokenContract,
+      stakingContract
+    } = await initContracts(accounts));
 
     const tx = await liquiBetContract.createPool(
       startDateTime,
@@ -256,3 +216,64 @@ describe("Liquibet contract", async () => {
   });
 });
 
+async function initContracts(accounts: SignerWithAddress[]): Promise<ILiquibetContracts> {
+  const liquiBetContractFactory = await ethers.getContractFactory("Liquibet");
+  const aggregatorContractFactory = await ethers.getContractFactory("MockV3Aggregator");
+  const vrfContractFactory = await ethers.getContractFactory("VRFCoordinatorV2Mock");
+  
+  const aggregatorContract: MockV3Aggregator = await aggregatorContractFactory.deploy(
+    ASSET_DECIMALS,
+    ASSET_INITIAL_PRICE
+  ) as MockV3Aggregator;
+  await aggregatorContract.deployed();
+  
+  const BASE_FEE = "100000000000000000"
+  const GAS_PRICE_LINK = "1000000000" // 0.000000001 LINK per gas
+  const vrfContract = await vrfContractFactory.deploy(
+    BASE_FEE,
+    GAS_PRICE_LINK
+  ) as VRFCoordinatorV2Mock;
+  await vrfContract.deployed();
+  
+  const fundAmount: BigNumber = BigNumber.from(1000000000000);
+  const vrfTx: ContractTransaction = await vrfContract.createSubscription();
+  const txReceipt: ContractReceipt = await vrfTx.wait(1);
+
+  if (!txReceipt.events) throw Error("VrfCOntract setup error");
+
+  const subscriptionId = ethers.BigNumber.from(txReceipt.events[0].topics[1])
+  await vrfContract.fundSubscription(subscriptionId, fundAmount)
+
+  const liquiBetContract = await liquiBetContractFactory.deploy(
+    TOKEN_UPDATE_INTERVAL,
+    aggregatorContract.address, 
+    vrfContract.address,
+    ethers.utils.parseEther(LIQUIBET_CONTRACT_FEE.toFixed(18)),
+  ) as Liquibet;
+  await liquiBetContract.deployed();
+  
+  const tokenAddress = await liquiBetContract.token();
+  const tokenFactory = await ethers.getContractFactory("SFT");
+  const tokenContract = tokenFactory.attach(tokenAddress) as SFT;
+  
+  const stakingContractFactory = await ethers.getContractFactory("Staking");
+  const stakingContract = await stakingContractFactory.deploy(10) as Staking;
+  await stakingContract.deployed();
+
+  // fund the staking contract
+  accounts[0].sendTransaction({ to: stakingContract.address, value: ethers.utils.parseEther("10.0")});
+
+  return {
+    aggregatorContract,
+    liquiBetContract,
+    tokenContract,
+    stakingContract,
+  }
+}
+
+interface ILiquibetContracts {
+  aggregatorContract : MockV3Aggregator,
+  liquiBetContract: Liquibet,
+  tokenContract: SFT,
+  stakingContract: Staking
+}
