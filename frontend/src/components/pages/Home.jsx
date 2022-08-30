@@ -1,4 +1,5 @@
 import React from "react";
+import PoolCard from "../shared/PoolCard";
 
 function Home() {
   return (
@@ -10,6 +11,7 @@ function Home() {
       <p className="mt-8 text-white">
         A crazy weird SFT Asset Derivative with Gambling and Lottery Mechanics
       </p>
+      <PoolCard />
     </div>
   );
 }
