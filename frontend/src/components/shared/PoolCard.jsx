@@ -3,32 +3,42 @@ import LiquibetJSON from "../../Liquibet.json";
 import { useState } from "react";
 import { environment } from "../../environment";
 import { toast } from 'react-toastify';
-import { ethers } from 'ethers';
+import { ethers, utils } from 'ethers';
 import { formatDateTime, formatPeriod } from "../../helpers/dates";
+import Tier from "./Tier";
 
 function PoolCard() {
   const [dataFetched, updateDataFetched] = useState(false);
   const [data, updateData] = useState({});
   const [message, updateMessage] = useState("");
+  
+  const provider = new ethers.providers.Web3Provider(window.ethereum);
+
+  let contract = new ethers.Contract(
+    environment.liquibetContractAddress,
+    LiquibetJSON.abi,
+    provider
+  );
 
   async function getPoolData() {
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
-
-    let contract = new ethers.Contract(
-      environment.liquibetContractAddress,
-      LiquibetJSON.abi,
-      provider
-    );
 
     const pool = await contract.pools(1);
     const fee = await contract.fee();
 
+    let tiersCount = 5;
+    let tiers = [];
+    for(let i = 0; i < tiersCount; i++) {
+      let tier = await contract.tiers(1, i);
+      tiers.push(tier);
+    }
+
     let item = {
-      asset: ethers.utils.parseBytes32String(pool.assetPair.name),
-      creatorFee: ethers.utils.formatEther(pool.creatorFee),
-      contractFee: ethers.utils.formatEther(fee),
+      asset: utils.parseBytes32String(pool.assetPair.name),
+      creatorFee: utils.formatEther(pool.creatorFee),
+      contractFee: utils.formatEther(fee),
       startDate: formatDateTime(pool.startDateTime),
       lockPeriod: formatPeriod(pool.lockPeriod),
+      tiers: tiers
     };
     
     console.log(item);
@@ -38,7 +48,6 @@ function PoolCard() {
 
   async function buySFT(tierId, price) {
     try {
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
       const signer = provider.getSigner();
 
       let contract = new ethers.Contract(
@@ -46,9 +55,9 @@ function PoolCard() {
         LiquibetJSON.abi,
         signer
       );
-      const salePrice = ethers.utils.parseUnits(price, "ether");
+      const salePrice = utils.parseUnits(price, "ether");
       // TODO did not manage to transform data.contractFee form hex to decimals
-      const feePrice = ethers.utils.parseUnits("10000000", "wei");
+      const feePrice = utils.parseUnits("10000000", "wei");
       const totalPrice = salePrice.add(feePrice);
       updateMessage("Buying the SFT... Please Wait (Upto 5 mins)");
       //run the executeSale function
@@ -74,46 +83,14 @@ function PoolCard() {
         <p>Lock Period: {data.lockPeriod}</p>
         <p>Creator Fee: {data.creatorFee}</p>
         <p>Contract Fee: {data.contractFee}</p>
-        <p className="mt-2">
-          <button
-            className=" bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-sm"
-            onClick={() => buySFT(0, "0.03")}
-          >
-            Tier 1
-          </button>
-        </p>
-        <p className="mt-2">
-          <button
-            className=" bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-sm"
-            onClick={() => buySFT(1, "0.06")}
-          >
-            Tier 2
-          </button>
-        </p>
-        <p className="mt-2">
-          <button
-            className=" bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-sm"
-            onClick={() => buySFT(2, "0.3")}
-          >
-            Tier 3
-          </button>
-        </p>
-        <p className="mt-2">
-          <button
-            className=" bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-sm"
-            onClick={() => buySFT(3, "0.9")}
-          >
-            Tier 4
-          </button>
-        </p>
-        <p className="mt-2">
-          <button
-            className=" bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-sm"
-            onClick={() => buySFT(4, "3")}
-          >
-            Tier 5
-          </button>
-        </p>
+        {data.tiers && 
+          data.tiers.map((tier, i) => 
+            <Tier key={i} 
+                  tierId={i} 
+                  buyInPrice={utils.formatEther(tier.buyInPrice)} 
+                  liquidationPrice={utils.formatUnits(tier.liquidationPrice, 0)}
+                  buySFT={buySFT} />)}
+          
       </div>
       <div className="text-green text-center mt-3">{message}</div>
     </div>
