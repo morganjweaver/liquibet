@@ -72,33 +72,21 @@ function Navbar() {
             </Link>
           </li>
           <li className="w-2/6">
-            <ul className="lg:flex justify-between mr-10 text-lg">
+            <ul className="lg:flex justify-between mr-10 text-lg navbar-links">
               {location.pathname === "/" ? (
-                <li className="border-b-2  p-2">
-                  <Link to="/">LiquiBet</Link>
-                </li>
+                <Link className="border-b-2 p-2" to="/">LiquiBet</Link>
               ) : (
-                <li className="hover:border-b-2  p-2">
-                  <Link to="/">LiquiBet</Link>
-                </li>
+                <Link className="hover:border-b-2 p-2" to="/">LiquiBet</Link>
               )}
               {location.pathname === "/pool" ? (
-                <li className="border-b-2  p-2">
-                  <Link to="/pool">Pool</Link>
-                </li>
+                <Link className="border-b-2 p-2" to="/pool">Pool</Link>
               ) : (
-                <li className="hover:border-b-2  p-2">
-                  <Link to="/pool">Pool</Link>
-                </li>
+                <Link className="hover:border-b-2 p-2" to="/pool">Pool</Link>
               )}
               {location.pathname === "/mySFT" ? (
-                <li className="border-b-2  p-2">
-                  <Link to="/mySFT">List My SFTs</Link>
-                </li>
+                <Link className="border-b-2 p-2" to="/mySFT">List My SFTs</Link>
               ) : (
-                <li className="hover:border-b-2  p-2">
-                  <Link to="/mySFT">List My SFTs</Link>
-                </li>
+                <Link className="hover:border-b-2 p-2" to="/mySFT">List My SFTs</Link>
               )}
               <li>
                 <button
