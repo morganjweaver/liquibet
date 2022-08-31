@@ -1,6 +1,10 @@
 import React from "react";
 import LiquibetJSON from "../../Liquibet.json";
 import { useState } from "react";
+import { environment } from "../../environment";
+import { toast } from 'react-toastify';
+import { ethers } from 'ethers';
+import { formatDateTime, formatPeriod } from "../../helpers/dates";
 
 function PoolCard() {
   const [dataFetched, updateDataFetched] = useState(false);
@@ -8,11 +12,10 @@ function PoolCard() {
   const [message, updateMessage] = useState("");
 
   async function getPoolData() {
-    const ethers = require("ethers");
     const provider = new ethers.providers.Web3Provider(window.ethereum);
 
     let contract = new ethers.Contract(
-      "0xa0c3ccef7d6a93a08314b1e698f91d1024e46b79",
+      environment.liquibetContractAddress,
       LiquibetJSON.abi,
       provider
     );
@@ -21,11 +24,13 @@ function PoolCard() {
     const fee = await contract.fee();
 
     let item = {
-      creatorFee: pool.creatorFee._hex,
-      contractFee: fee._hex,
-      startDate: pool.startDateTime._hex,
-      lockPeriod: pool.lockPeriod._hex,
+      asset: ethers.utils.parseBytes32String(pool.assetPair.name),
+      creatorFee: ethers.utils.formatEther(pool.creatorFee),
+      contractFee: ethers.utils.formatEther(fee),
+      startDate: formatDateTime(pool.startDateTime),
+      lockPeriod: formatPeriod(pool.lockPeriod),
     };
+    
     console.log(item);
     updateData(item);
     updateDataFetched(true);
@@ -33,12 +38,11 @@ function PoolCard() {
 
   async function buySFT(tierId, price) {
     try {
-      const ethers = require("ethers");
       const provider = new ethers.providers.Web3Provider(window.ethereum);
       const signer = provider.getSigner();
 
       let contract = new ethers.Contract(
-        "0xa0c3ccef7d6a93a08314b1e698f91d1024e46b79",
+        environment.liquibetContractAddress,
         LiquibetJSON.abi,
         signer
       );
@@ -53,10 +57,10 @@ function PoolCard() {
       });
       await transaction.wait();
 
-      alert("You successfully bought the SFT!");
+      toast.success("You successfully bought the SFT!");
       updateMessage("");
     } catch (e) {
-      alert("Upload Error" + e);
+      toast.error("Upload Error: " + e.message);
     }
   }
 
@@ -65,8 +69,7 @@ function PoolCard() {
   return (
     <div className="justify-center w-80 h-200 mx-2 mb-5 mt-8 bg-[#49B649] border-2 border-[#B5289E] rounded">
       <div className="ml-4">
-        <h1>Pool 1</h1>
-        <h2>Ethereum</h2>
+        <h2>Asset: {data.asset}</h2>
         <p>Start Date: {data.startDate}</p>
         <p>Lock Period: {data.lockPeriod}</p>
         <p>Creator Fee: {data.creatorFee}</p>
