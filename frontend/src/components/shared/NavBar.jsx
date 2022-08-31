@@ -102,7 +102,7 @@ function Navbar() {
           </li>
         </ul>
       </nav>
-      <div className="text-bold text-right mr-10 text-sm text-white">
+      <div className="text-bold text-right mr-14 text-sm text-white">
         {currAddress !== "" ? "Connected to" : "Not Connected. Please login."}{" "}
         {currAddress !== ""
           ? currAddress.substring(0, 6) +

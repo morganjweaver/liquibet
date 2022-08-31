@@ -82,25 +82,29 @@ function Pool() {
   if (!dataFetched) getPoolData();
 
   return (
-    <div className="justify-center w-80 h-200 mx-2 mb-5 mt-8 bg-[#49B649] border-2 border-[#B5289E] rounded">
-      <div className="ml-4">
-        <h2>Asset: {data.asset}</h2>
-        <h2>APY: {data.stakingApy}</h2>
-        <h2>APY: {data.amountStaked}</h2>
-        <p>Start Date: {data.startDate}</p>
-        <p>Lock Period: {data.lockPeriod}</p>
-        <p>Creator Fee: {data.creatorFee}</p>
-        <p>Contract Fee: {data.contractFee}</p>
-        {data.tiers && 
-          data.tiers.map((tier, i) => 
-            <Tier key={i} 
-                  tierId={i} 
-                  buyInPrice={utils.formatEther(tier.buyInPrice)} 
-                  liquidationPrice={utils.formatUnits(tier.liquidationPrice, 0)}
-                  buySFT={buySFT} />)}
-          
+    <div class="text-white font-1 mt-2">
+      <h1 class="text-center text-4xl">Pool {poolId}</h1>
+      <div className="pool-details backdrop-1 justify-center w-100 h-200 mb-5 mt-4 py-4 px-4 border-2 border-[#B5289E] rounded">
+        <div className="ml-4">
+          <p>Asset: {data.asset}</p>
+          <p>APY: {data.stakingApy}%</p> 
+          <p>Total amount: {data.amountStaked} ETH</p>
+          <p>Start Date: {data.startDate}</p>
+          <p>Lock Period: {data.lockPeriod}</p>
+          <p>Creator Fee: {data.creatorFee} ETH</p>
+          <p>Contract Fee: {data.contractFee} ETH</p>
+          <h2 class="text-center">Available tier levels</h2>
+          {data.tiers && 
+            data.tiers.map((tier, i) => 
+              <Tier key={i} 
+                    tierId={i} 
+                    buyInPrice={utils.formatEther(tier.buyInPrice)} 
+                    liquidationPrice={utils.formatUnits(tier.liquidationPrice, 0)}
+                    buySFT={buySFT} />)}
+            
+        </div>
+        <div className="text-green text-center mt-3">{message}</div>
       </div>
-      <div className="text-green text-center mt-3">{message}</div>
     </div>
   );
 }
