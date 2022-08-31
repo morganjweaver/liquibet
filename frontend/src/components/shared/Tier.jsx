@@ -2,15 +2,15 @@ import React from 'react';
 
 function Tier({tierId, buyInPrice, liquidationPrice, buySFT}) {
   return (
-    <p className="mt-2">
+    <div class="my-5">
       <button
-        className=" bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-sm"
+        className="tier-btn text-white font-bold py-2 px-4 text-sm"
         onClick={() => buySFT(tierId, buyInPrice)}
       >
-        Tier {tierId + 1}
+        BUY TIER {tierId + 1}
       </button>
-      <span>Buyin price: {buyInPrice}, Liquidation level: {liquidationPrice}%</span>
-    </p>
+      <span class="inline-block ml-3">Buyin price: {buyInPrice} ETH, Liquidation level: {liquidationPrice}%</span>
+    </div>
   )
 }
 

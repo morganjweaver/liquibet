@@ -57,7 +57,7 @@ function Navbar() {
   }
 
   return (
-    <div className="bg-primary">
+    <div>
       <nav>
         <ul className="flex items-end justify-between py-3 bg-transparent pr-5 text-white">
           <li className="flex items-end ml-5 pb-2">
@@ -72,54 +72,44 @@ function Navbar() {
             </Link>
           </li>
           <li className="w-2/6">
-            <ul className="lg:flex justify-between mr-10 text-lg">
+            <ul className="lg:flex justify-between mr-10 text-lg navbar-links">
               {location.pathname === "/" ? (
-                <li className="border-b-2 hover:pb-0 p-2">
-                  <Link to="/">LiquiBet</Link>
-                </li>
+                <Link className="border-b-2 p-2" to="/">LiquiBet</Link>
               ) : (
-                <li className="hover:border-b-2 hover:pb-0 p-2">
-                  <Link to="/">LiquiBet</Link>
-                </li>
+                <Link className="hover:border-b-2 p-2" to="/">LiquiBet</Link>
               )}
-              {location.pathname === "/pool" ? (
-                <li className="border-b-2 hover:pb-0 p-2">
-                  <Link to="/pool">Pool</Link>
-                </li>
+              {/* {location.pathname === "/pool" ? (
+                <Link className="border-b-2 p-2" to="/pool">Pool</Link>
               ) : (
-                <li className="hover:border-b-2 hover:pb-0 p-2">
-                  <Link to="/pool">Pool</Link>
-                </li>
-              )}
+                <Link className="hover:border-b-2 p-2" to="/pool">Pool</Link>
+              )} */}
               {location.pathname === "/mySFT" ? (
-                <li className="border-b-2 hover:pb-0 p-2">
-                  <Link to="/mySFT">List My SFTs</Link>
-                </li>
+                <Link className="border-b-2 p-2" to="/mySFT">My SFTs</Link>
               ) : (
-                <li className="hover:border-b-2 hover:pb-0 p-2">
-                  <Link to="/mySFT">List My SFTs</Link>
-                </li>
+                <Link className="hover:border-b-2 p-2" to="/mySFT">My SFTs</Link>
               )}
-              <li>
+              {!connected ? 
                 <button
                   className="enableEthereumButton bg-[#B5289E] hover:bg-[#B5289EBB] text-white py-2 px-4 rounded text-sm"
                   onClick={connect}
                 >
-                  {connected ? "Connected" : "Connect Wallet"}
+                  CONNECT WALLET
                 </button>
-              </li>
+                : 
+                <span class="text-[#B5289E] py-2 font-bold">CONNECTED</span>
+              }
             </ul>
           </li>
         </ul>
       </nav>
-      <div className="text-bold text-right mr-10 text-sm text-white">
+      {/* <div className="text-bold text-right mr-8 text-sm text-white">
         {currAddress !== "" ? "Connected to" : "Not Connected. Please login."}{" "}
         {currAddress !== ""
           ? currAddress.substring(0, 6) +
             "..." +
             currAddress.substring(currAddress.length - 4)
           : ""}
-      </div>
+      </div> */}
     </div>
   );
 }
