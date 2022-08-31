@@ -7,10 +7,10 @@ import { ethers, utils } from 'ethers';
 import { formatDateTime, formatPeriod } from "../../helpers/dates";
 import Tier from "../shared/Tier";
 import { Link } from "react-router-dom";
-import { useParams } from "react-router-dom"
+import { useParams } from "react-router-dom";
 import SmallSftCard from "../shared/SmallSftCard";
 
-function Pool() {
+function PoolDetails() {
   const [dataFetched, updateDataFetched] = useState(false);
   const [data, updateData] = useState({});
   const [message, updateMessage] = useState("");
@@ -83,13 +83,13 @@ function Pool() {
   if (!dataFetched) getPoolData();
 
   return (
-    <div class="text-white font-1 mt-2">
-      <h1 class="text-center text-4xl">Pool {poolId}</h1>
+    <div className="text-white font-1 mt-2">
+      <h1 className="text-center text-4xl">Pool {poolId}</h1>
       <div className="pool-details w-100 h-200 mb-5 mt-2 py-4 px-4">
-        <div class="flex">
+        <div className="flex">
           <div className="w-1/2">
-            <h2 class="text-center">Details</h2>
-            <hr class="my-2 border-[#B5289E]"/>
+            <h2 className="text-center">Details</h2>
+            <hr className="my-2 border-[#B5289E]"/>
             <p>Asset: {data.asset}</p>
             <p>APY: {data.stakingApy}%</p> 
             <p>Total amount: {data.amountStaked} ETH</p>
@@ -98,10 +98,10 @@ function Pool() {
             <p>Creator Fee: {data.creatorFee} ETH</p>
             <p>Contract Fee: {data.contractFee} ETH</p>
           </div>
-          <div class="w-1/2">
-            <h2 class="text-center">Available tier levels</h2>
-            <hr class="my-2 border-[#B5289E]"/>
-            <div class="mt-4">
+          <div className="w-1/2">
+            <h2 className="text-center">Available tier levels</h2>
+            <hr className="my-2 border-[#B5289E]"/>
+            <div className="mt-4">
               {data.tiers && 
                 data.tiers.map((tier, i) => 
                   <Tier key={i} 
@@ -113,9 +113,9 @@ function Pool() {
           </div>
           <div className="text-center my-1">{message}</div>
         </div>
-        <div class="mt-4 text-center">
+        <div className="mt-4 text-center">
           <h2>My SFTs</h2>
-          <hr class="my-2 border-[#B5289E]"/>
+          <hr className="my-2 border-[#B5289E]"/>
           <SmallSftCard id={1} imgSrc="https://gateway.pinata.cloud/ipfs/QmRf7fdqC5WVryZmfXH5PnHXs4SUzPfQ3RUrpwfDSvzTAa" />
           <SmallSftCard id={2} imgSrc="https://gateway.pinata.cloud/ipfs/QmSoE4z3fqGunb9RWrLq9MzDE3qibJZoYgrPnfjCzdH748" />
         </div>
@@ -124,4 +124,4 @@ function Pool() {
   );
 }
 
-export default Pool;
+export default PoolDetails;

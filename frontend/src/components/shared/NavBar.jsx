@@ -83,10 +83,10 @@ function Navbar() {
               ) : (
                 <Link className="hover:border-b-2 p-2" to="/pool">Pool</Link>
               )} */}
-              {location.pathname === "/mySFT" ? (
-                <Link className="border-b-2 p-2" to="/mySFT">My SFTs</Link>
+              {location.pathname === "/mySFTs" ? (
+                <Link className="border-b-2 p-2" to="/mySFTs">My SFTs</Link>
               ) : (
-                <Link className="hover:border-b-2 p-2" to="/mySFT">My SFTs</Link>
+                <Link className="hover:border-b-2 p-2" to="/mySFTs">My SFTs</Link>
               )}
               {!connected ? 
                 <button
@@ -96,7 +96,7 @@ function Navbar() {
                   CONNECT WALLET
                 </button>
                 : 
-                <span class="text-[#B5289E] py-2 font-bold">CONNECTED</span>
+                <span className="text-[#B5289E] py-2 font-bold">CONNECTED</span>
               }
             </ul>
           </li>

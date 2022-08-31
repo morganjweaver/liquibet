@@ -1,6 +1,6 @@
 import React from "react";
 
-function MySFT() {
+function MySFTs() {
   return (
     <div className="px-16 bg-primary h-screen">
       <h1 className="text-4xl text-white">My SFTs</h1>
@@ -12,4 +12,4 @@ function MySFT() {
   );
 }
 
-export default MySFT;
+export default MySFTs;
