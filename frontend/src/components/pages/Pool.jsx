@@ -8,6 +8,7 @@ import { formatDateTime, formatPeriod } from "../../helpers/dates";
 import Tier from "../shared/Tier";
 import { Link } from "react-router-dom";
 import { useParams } from "react-router-dom"
+import SmallSftCard from "../shared/SmallSftCard";
 
 function Pool() {
   const [dataFetched, updateDataFetched] = useState(false);
@@ -84,26 +85,40 @@ function Pool() {
   return (
     <div class="text-white font-1 mt-2">
       <h1 class="text-center text-4xl">Pool {poolId}</h1>
-      <div className="pool-details backdrop-1 justify-center w-100 h-200 mb-5 mt-4 py-4 px-4 border-2 border-[#B5289E] rounded">
-        <div className="ml-4">
-          <p>Asset: {data.asset}</p>
-          <p>APY: {data.stakingApy}%</p> 
-          <p>Total amount: {data.amountStaked} ETH</p>
-          <p>Start Date: {data.startDate}</p>
-          <p>Lock Period: {data.lockPeriod}</p>
-          <p>Creator Fee: {data.creatorFee} ETH</p>
-          <p>Contract Fee: {data.contractFee} ETH</p>
-          <h2 class="text-center">Available tier levels</h2>
-          {data.tiers && 
-            data.tiers.map((tier, i) => 
-              <Tier key={i} 
-                    tierId={i} 
-                    buyInPrice={utils.formatEther(tier.buyInPrice)} 
-                    liquidationPrice={utils.formatUnits(tier.liquidationPrice, 0)}
-                    buySFT={buySFT} />)}
-            
+      <div className="pool-details w-100 h-200 mb-5 mt-2 py-4 px-4">
+        <div class="flex">
+          <div className="w-1/2">
+            <h2 class="text-center">Details</h2>
+            <hr class="my-2 border-[#B5289E]"/>
+            <p>Asset: {data.asset}</p>
+            <p>APY: {data.stakingApy}%</p> 
+            <p>Total amount: {data.amountStaked} ETH</p>
+            <p>Start Date: {data.startDate}</p>
+            <p>Lock Period: {data.lockPeriod}</p>
+            <p>Creator Fee: {data.creatorFee} ETH</p>
+            <p>Contract Fee: {data.contractFee} ETH</p>
+          </div>
+          <div class="w-1/2">
+            <h2 class="text-center">Available tier levels</h2>
+            <hr class="my-2 border-[#B5289E]"/>
+            <div class="mt-4">
+              {data.tiers && 
+                data.tiers.map((tier, i) => 
+                  <Tier key={i} 
+                        tierId={i} 
+                        buyInPrice={utils.formatEther(tier.buyInPrice)} 
+                        liquidationPrice={utils.formatUnits(tier.liquidationPrice, 0)}
+                        buySFT={buySFT} />)}
+            </div>
+          </div>
+          <div className="text-center my-1">{message}</div>
         </div>
-        <div className="text-green text-center mt-3">{message}</div>
+        <div class="mt-4 text-center">
+          <h2>My SFTs</h2>
+          <hr class="my-2 border-[#B5289E]"/>
+          <SmallSftCard id={1} imgSrc="https://gateway.pinata.cloud/ipfs/QmRf7fdqC5WVryZmfXH5PnHXs4SUzPfQ3RUrpwfDSvzTAa" />
+          <SmallSftCard id={2} imgSrc="https://gateway.pinata.cloud/ipfs/QmSoE4z3fqGunb9RWrLq9MzDE3qibJZoYgrPnfjCzdH748" />
+        </div>
       </div>
     </div>
   );

@@ -78,15 +78,15 @@ function Navbar() {
               ) : (
                 <Link className="hover:border-b-2 p-2" to="/">LiquiBet</Link>
               )}
-              {location.pathname === "/pool" ? (
+              {/* {location.pathname === "/pool" ? (
                 <Link className="border-b-2 p-2" to="/pool">Pool</Link>
               ) : (
                 <Link className="hover:border-b-2 p-2" to="/pool">Pool</Link>
-              )}
+              )} */}
               {location.pathname === "/mySFT" ? (
-                <Link className="border-b-2 p-2" to="/mySFT">List My SFTs</Link>
+                <Link className="border-b-2 p-2" to="/mySFT">My SFTs</Link>
               ) : (
-                <Link className="hover:border-b-2 p-2" to="/mySFT">List My SFTs</Link>
+                <Link className="hover:border-b-2 p-2" to="/mySFT">My SFTs</Link>
               )}
               {!connected ? 
                 <button
@@ -96,20 +96,20 @@ function Navbar() {
                   CONNECT WALLET
                 </button>
                 : 
-                <span class="text-[#B5289E] py-2 font-bold">WALLET CONNECTED</span>
+                <span class="text-[#B5289E] py-2 font-bold">CONNECTED</span>
               }
             </ul>
           </li>
         </ul>
       </nav>
-      <div className="text-bold text-right mr-14 text-sm text-white">
+      {/* <div className="text-bold text-right mr-8 text-sm text-white">
         {currAddress !== "" ? "Connected to" : "Not Connected. Please login."}{" "}
         {currAddress !== ""
           ? currAddress.substring(0, 6) +
             "..." +
             currAddress.substring(currAddress.length - 4)
           : ""}
-      </div>
+      </div> */}
     </div>
   );
 }
