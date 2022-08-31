@@ -57,7 +57,7 @@ function Navbar() {
   }
 
   return (
-    <div className="bg-primary">
+    <div>
       <nav>
         <ul className="flex items-end justify-between py-3 bg-transparent pr-5 text-white">
           <li className="flex items-end ml-5 pb-2">

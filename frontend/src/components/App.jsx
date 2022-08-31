@@ -12,14 +12,16 @@ import { Fragment } from "react";
 function App() {
   return (
     <Fragment>
+    <div class="px-16 bg-primary h-screen">
       <NavBar />
       <ToastContainer position="bottom-right" />
-      <Routes>
-        <Route exact path="/" element={<Home />} />
-        <Route exact path="mySFT" element={<MySFT />} />
-        <Route path="pool/:id" element={<Pool />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
+        <Routes>
+          <Route exact path="/" element={<Home />} />
+          <Route exact path="mySFT" element={<MySFT />} />
+          <Route path="pool/:id" element={<Pool />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </div>
       {/* <Footer /> */}
     </Fragment>
   );

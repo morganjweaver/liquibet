@@ -50,7 +50,7 @@ function Home() {
   if (!dataFetched) getPoolData();
 
   return (
-    <div className="px-16 bg-primary h-screen-minus">
+    <div className="">
       <h1 className="text-4xl font-1 font-bold font-size-headline color-1">LIQUIBET</h1>
       <h2 className="mt-8 text-4xl text-white font-1 font-bold font-size-headline">
         Buy, bet, and don't get liquidated!
