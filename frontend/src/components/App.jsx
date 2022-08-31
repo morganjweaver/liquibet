@@ -16,8 +16,8 @@ function App() {
       <ToastContainer position="bottom-right" />
       <Routes>
         <Route exact path="/" element={<Home />} />
-        <Route exact path="pool" element={<Pool />} />
         <Route exact path="mySFT" element={<MySFT />} />
+        <Route path="pool/:id" element={<Pool />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       {/* <Footer /> */}

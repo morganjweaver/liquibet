@@ -5,13 +5,14 @@ import { environment } from "../../environment";
 import { toast } from 'react-toastify';
 import { ethers, utils } from 'ethers';
 import { formatDateTime, formatPeriod } from "../../helpers/dates";
-import Tier from "./Tier";
+import { Link } from "react-router-dom";
 
-function PoolCard() {
+function SmallPoolCard() {
   const [dataFetched, updateDataFetched] = useState(false);
   const [data, updateData] = useState({});
   const [message, updateMessage] = useState("");
   
+  const poolId = 1;
   const provider = new ethers.providers.Web3Provider(window.ethereum);
 
   let contract = new ethers.Contract(
@@ -22,7 +23,7 @@ function PoolCard() {
 
   async function getPoolData() {
 
-    const pool = await contract.pools(1);
+    const pool = await contract.pools(poolId);
     const fee = await contract.fee();
 
     let tiersCount = 5;
@@ -76,25 +77,26 @@ function PoolCard() {
   if (!dataFetched) getPoolData();
 
   return (
-    <div className="justify-center w-80 h-200 mx-2 mb-5 mt-8 bg-[#49B649] border-2 border-[#B5289E] rounded">
-      <div className="ml-4">
+    <div class="justify-center w-80 h-200 mx-2 mb-5 mt-8 bg-[#8B47E1] border-2 border-[#8B47E1] rounded font-1 text-white">
+      <div class="px-4 py-3">
+        <h1 class="text-center pb-3">POOL 1</h1>
         <h2>Asset: {data.asset}</h2>
         <p>Start Date: {data.startDate}</p>
         <p>Lock Period: {data.lockPeriod}</p>
-        <p>Creator Fee: {data.creatorFee}</p>
-        <p>Contract Fee: {data.contractFee}</p>
-        {data.tiers && 
-          data.tiers.map((tier, i) => 
-            <Tier key={i} 
-                  tierId={i} 
-                  buyInPrice={utils.formatEther(tier.buyInPrice)} 
-                  liquidationPrice={utils.formatUnits(tier.liquidationPrice, 0)}
-                  buySFT={buySFT} />)}
-          
+        <img
+          src="/images/Ethereum-logo.png"
+          alt=""
+          width={60}
+          height={60}
+          className="my-4 center"
+        />
+        {/* <button onClick={navigate .push("/pool")}></button> */}
+        <div class="text-center">
+          <Link to={`/pool/${poolId}`}>View details</Link>
+        </div>
       </div>
-      <div className="text-green text-center mt-3">{message}</div>
     </div>
   );
 }
 
-export default PoolCard;
+export default SmallPoolCard;
