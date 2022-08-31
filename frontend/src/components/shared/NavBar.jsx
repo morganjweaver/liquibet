@@ -58,7 +58,7 @@ function Navbar() {
 
   return (
     <div className="bg-[#5723AB]">
-      <nav className="w-screen px-8">
+      <nav>
         <ul className="flex items-end justify-between py-3 bg-transparent pr-5 text-white">
           <li className="flex items-end ml-5 pb-2">
             <Link to="/">
