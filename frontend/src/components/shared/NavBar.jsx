@@ -63,13 +63,12 @@ function Navbar() {
           <li className="flex items-end ml-5 pb-2">
             <Link to="/">
               <img
-                src="/images/lazer-logo-2.png"
+                src="/images/liquibet-logo.png"
                 alt=""
                 width={120}
                 height={120}
                 className="inline-block -mt-2"
               />
-              <div className="inline-block text-xl ml-2">LiquiBet</div>
             </Link>
           </li>
           <li className="w-2/6">
