@@ -88,14 +88,16 @@ function Navbar() {
               ) : (
                 <Link className="hover:border-b-2 p-2" to="/mySFT">List My SFTs</Link>
               )}
-              <li>
+              {!connected ? 
                 <button
                   className="enableEthereumButton bg-[#B5289E] hover:bg-[#B5289EBB] text-white py-2 px-4 rounded text-sm"
                   onClick={connect}
                 >
-                  {connected ? "Connected" : "Connect Wallet"}
+                  CONNECT WALLET
                 </button>
-              </li>
+                : 
+                <span class="text-[#B5289E] py-2 font-bold">WALLET CONNECTED</span>
+              }
             </ul>
           </li>
         </ul>
