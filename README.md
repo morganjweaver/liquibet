@@ -34,7 +34,7 @@
     <img src="images/logo.png" alt="Logo" width="360" height="160">
   </a>
 
-  <h1 align="center">LiquiBet: A Mutating NFT Asset Derivatives with Gambling and Lottery Mechanics</h1>
+  <h1 align="center">LiquiBet: A Dynamic SFT Asset Derivatives with Gambling and Lottery Mechanics</h1>
 
   <h3 align="center">
     Crypto winter is upon us; why not gamble, degens?
