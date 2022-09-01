@@ -1,10 +1,10 @@
 import { ethers } from "ethers"; // Hardhat for testing
 import "dotenv/config";
-import * as SFTJson from "../artifacts/contracts/SFT.sol/SFT.json";
+import * as SFTJson from "../../artifacts/contracts/SFT.sol/SFT.json";
 import {
   getSigner,
   checkBalance,
-} from "../helpers/utils";
+} from "../../helpers/utils";
 
 async function main() {
   const signer = getSigner();

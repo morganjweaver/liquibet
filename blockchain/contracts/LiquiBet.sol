@@ -45,6 +45,7 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
     bytes32 name;              // do we need name, can we get all the info from the chainlink contract?
     address priceFeedAddress;  // chainlink price feed data - is it in a form of a contract address?
     uint256 lowestPrice;
+    uint256 referencePrice;
   }
 
   uint256 public fee;  // fee should be large enough to cover contract operating expenses
@@ -60,15 +61,19 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
 
   constructor(
     uint256 _tokenUpdateInterval, 
-    address _priceFeed, 
+    address _tokenPriceFeed, 
     address _VRFContract, 
     uint256 _fee
   ) {
-    token = new SFT(_tokenUpdateInterval, _priceFeed);
+    // TODO for now, liquibet contract deploys this default sft token
+    // in the future, we should handle different price feeds for various assets 
+    // solutions: deploy new token on create pool, have sft contract handle different price feeds etc.
+    token = new SFT(_tokenUpdateInterval, _tokenPriceFeed);
+
     VRFOracle = VRFv2Consumer(_VRFContract);
     fee = _fee;
     lastPriceFeedUpdate = block.timestamp;
-    
+
     _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
   }
 
@@ -76,24 +81,23 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
   
   ///@notice create a new pool
   ///@dev tier levels are hard-coded for now
+  /// TODO only admin can call for now
   function createPool(
     uint256 startDateTime, 
     uint256 lockPeriod,
     bytes32 assetPairName,
     address priceFeedAddress,
-    address stakingContractAddress,
-    address keeperAddress
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    address stakingContractAddress
+    ) external {
 
-    require(startDateTime > block.timestamp + 2 days, "Minimal buyin period is two days");
+    // require(startDateTime > block.timestamp + 2 days, "Minimal buyin period is two days");
     require(assetPairName != "", "Asset pair name is required");
     require(priceFeedAddress != address(0), "Price feed address is required");
     require(stakingContractAddress != address(0), "Staking contract address is required");
-    require(keeperAddress != address(0), "Keeper address is required");
     
     // get the current price for the asset pair as the lowestPrice of the pool
-    uint256 currentPrice = 20000; // TODO    
-    AssetPair memory assetPair = AssetPair(assetPairName, priceFeedAddress, currentPrice);
+    uint256 currentPrice = getLatestPrice(priceFeedAddress);    
+    AssetPair memory assetPair = AssetPair(assetPairName, priceFeedAddress, currentPrice, currentPrice);
 
     // staking provider setup
     StakingInfo memory stakingInfo = setupStaking(stakingContractAddress);
@@ -115,11 +119,11 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
     addNewPool(newPoolId, pool);
     
     // tier levels hard-coded for now
-    tiers[newPoolId].push(Tier(50, 7));
-    tiers[newPoolId].push(Tier(100, 12));
-    tiers[newPoolId].push(Tier(500, 17));
-    tiers[newPoolId].push(Tier(1000, 25));
-    tiers[newPoolId].push(Tier(5000, 35));
+    tiers[newPoolId].push(Tier(3e16 wei, 7));     // 0.03 eth
+    tiers[newPoolId].push(Tier(6e16 wei, 12));    // 0.06 eth
+    tiers[newPoolId].push(Tier(30e16 wei, 19));   // 0.3 eth
+    tiers[newPoolId].push(Tier(90e16 wei, 28));   // 0.9 eth
+    tiers[newPoolId].push(Tier(300e16 wei, 38));  // 3 eth
 
     // setup a keeper that calls the stakePoolFunds function with poolId on the pool startDateTime
     // setup a keeper that calls the resolution function with poolId on the end of the lockInPeriod
@@ -198,12 +202,10 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
 
   ///@notice stake pool funds
   ///@dev works only for ETH
-  // TODO permission grantRole(KEEPER_ROLE)
   function stakePoolFunds(uint256 poolId) public onlyRole(DEFAULT_ADMIN_ROLE) {
-    Pool storage pool = pools[poolId];
+    Pool memory pool = pools[poolId];
     IStakingProvider stakingProvider = IStakingProvider(pool.stakingInfo.contractAddress);
     stakingProvider.stake{ value: pool.stakingInfo.amountStaked }();
-    pool.lockInExecuted = true;
     // emit FundsStaked(poolId, pool.stakingInfo.asset, pool.stakingInfo.amountStaked)
   }
 
@@ -214,13 +216,11 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
     for (uint256 i = 0; i < poolIds.length; i++) {
       Pool memory pool = pools[i];
       
-      if (isPoolActive(pool.startDateTime, pool.lockPeriod)) {
-        continue;
-      }
-
-      uint256 currentPrice = getLatestPrice(pool.assetPair.priceFeedAddress);
-      if (pool.assetPair.lowestPrice > currentPrice) {
-        pool.assetPair.lowestPrice = currentPrice;
+      if (isPoolInLockinPhase(pool.startDateTime, pool.lockPeriod)) {
+        uint256 currentPrice = getLatestPrice(pool.assetPair.priceFeedAddress);
+        if (pool.assetPair.lowestPrice > currentPrice) {
+          pool.assetPair.lowestPrice = currentPrice;
+        }
       }
     }
   }
@@ -277,7 +277,7 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
     return StakingInfo(name, stakingContractAddress, asset, apy, 0);
   }
 
-  function getLiquidationPrize(uint256 poolId, uint256 poolAssetLowestPrice) private returns (uint256) { 
+  function getLiquidationPrize(uint256 poolId, uint256 poolAssetLowestPrice) private view returns (uint256) { 
     
     uint256 winningPlayersCount;
     uint256 totalLiquidatedFunds;
@@ -367,24 +367,24 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
     returns (bool upkeepNeeded, bytes memory performData)
   {
     if(lastPriceFeedUpdate != 0 && block.timestamp + 6 hours > lastPriceFeedUpdate ){
-            upkeepNeeded = true;
-            performData = abi.encodePacked(uint256(0)); // This codes for the function to call in performUpkeep
-            return (true, performData);
+      upkeepNeeded = true;
+      performData = abi.encodePacked(uint256(0)); // This codes for the function to call in performUpkeep
+      return (true, performData);
     }
 
     for (uint256 i = 0; i < poolIds.length; i++) {
       Pool memory pool = pools[i];
       //determine whether to initiate staking
       if (!pool.lockInExecuted && isPoolInLockinPhase(pool.startDateTime, pool.lockPeriod)) {
-            upkeepNeeded = true;
-            performData = abi.encodePacked(uint256(1)); 
-            return (true, performData);
+        upkeepNeeded = true;
+        performData = abi.encodePacked(uint256(1)); 
+        return (true, performData);
       }
       // determine whether to call resolution fx
-       if (!pool.resolved && !isPoolActive(pool.startDateTime, pool.lockPeriod)) {
-            upkeepNeeded = true;
-            performData = abi.encodePacked(uint256(2)); 
-            return (true, performData);
+      if (!pool.resolved && !isPoolActive(pool.startDateTime, pool.lockPeriod)) {
+        upkeepNeeded = true;
+        performData = abi.encodePacked(uint256(2)); 
+        return (true, performData);
       }
     }
 
@@ -400,14 +400,16 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
   function performUpkeep(bytes calldata performData) external override {
     uint256 decodedValue = abi.decode(performData, (uint256));
     if(decodedValue == 0){
-        getPriceFeedData();
-        lastPriceFeedUpdate = block.timestamp;
+      getPriceFeedData();
+      lastPriceFeedUpdate = block.timestamp;
     } 
     if(decodedValue == 1){
       for (uint256 i = 0; i < poolIds.length; i++) {
-        Pool memory pool = pools[i];
+        Pool storage pool = pools[i];
         if (!pool.lockInExecuted && isPoolInLockinPhase(pool.startDateTime, pool.lockPeriod)) {
+          pool.assetPair.referencePrice = getLatestPrice(pool.assetPair.priceFeedAddress);
           stakePoolFunds(pool.poolId);
+          pool.lockInExecuted = true;
         }
       }
     } 

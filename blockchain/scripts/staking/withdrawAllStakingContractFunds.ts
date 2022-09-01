@@ -1,11 +1,11 @@
 import { Contract, ethers } from "ethers"; // Hardhat for testing
 import "dotenv/config";
-import * as StakingJSON from "../artifacts/contracts/Staking.sol/Staking.json";
-import { Staking } from "../typechain-types/contracts/Staking";
+import * as StakingJSON from "../../artifacts/contracts/Staking.sol/Staking.json";
+import { Staking } from "../../typechain-types/contracts/Staking";
 import {
   getSigner,
   checkBalance,
-} from "../helpers/utils";
+} from "../../helpers/utils";
 
 // An administrative contract to withdraw all ETH back from teh contract.  Deployer only. 
 async function main() {
