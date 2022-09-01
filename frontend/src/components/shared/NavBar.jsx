@@ -90,7 +90,7 @@ function Navbar() {
               )}
               {!connected ? 
                 <button
-                  className="enableEthereumButton bg-[#B5289E] hover:bg-[#B5289EBB] text-white py-2 px-4 rounded text-sm"
+                  className="enableEthereumButton backdrop-1-sm bg-[#B5289E] hover:bg-[#B5289EBB] text-white py-2 px-4 rounded text-sm"
                   onClick={connect}
                 >
                   CONNECT WALLET
