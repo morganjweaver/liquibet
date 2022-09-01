@@ -9,6 +9,7 @@ import { useParams } from "react-router-dom";
 import SmallSftCard from "../shared/SmallSftCard";
 import { getPoolData, getPoolSFTs } from "../../blockchainAgent";
 import LoadingComponent from "../shared/LoadingComponent";
+import ResolvedPoolDetailsMock from "../shared/ResolvedPoolDetailsMock";
 
 function PoolDetails() {
   const [dataFetched, updateDataFetched] = useState(false);
@@ -19,7 +20,7 @@ function PoolDetails() {
   const params = useParams();
   const poolId = params.id;
   const provider = new ethers.providers.Web3Provider(window.ethereum);
-
+  
   async function buySFT(tierId, price) {
     try {
       const signer = provider.getSigner();
@@ -54,6 +55,7 @@ function PoolDetails() {
     (async () => {
       let poolData = await getPoolData(poolId);
       let poolSfts = await getPoolSFTs(poolId);
+      console.log("poolData: " + poolData.isPoolResolved);
       console.log("poolSfts: " + poolSfts);
       updatePoolData(poolData);
       updatePoolSfts(poolSfts);
@@ -80,10 +82,18 @@ function PoolDetails() {
             <p>Contract Fee: {poolData.contractFee} ETH</p>
           </div>
           <div className="w-1/2">
-            <h2 className="text-center">Available tier levels</h2>
+            <h2 className="text-center">Tier levels</h2>
             <hr className="my-2 border-[#B5289E]"/>
             <div className="mt-4">
-              {poolData.tiers && 
+              {poolData.isPoolResolved && (
+                <div>
+                  <p>Reference price: {poolData.assetPair.referencePrice}$</p>
+                  <p>Lowest price: {poolData.assetPair.lowestPrice}$</p>
+                  {poolData.tiers.map((tier, i) => <ResolvedPoolDetailsMock id={i} tier={tier} assetPair={poolData.assetPair} />)}
+
+                </div>
+              )}
+              {poolData.tiers && !poolData.isPoolResolved && 
                 poolData.tiers.map((tier, i) => 
                   <Tier key={i} 
                         tierId={i} 
@@ -100,6 +110,12 @@ function PoolDetails() {
           {poolSfts.sfts.map(sft =>  
             <SmallSftCard key={sft.tokenId} amount={sft.amount} tokenId={sft.tokenId} imgSrc={sft.imgSrc} tierId={sft.tierId} status={sft.status} />
           )}
+          
+          {poolData.isPoolResolved && (
+                <div>
+                  <SmallSftCard key={sft.tokenId} amount={sft.amount} tokenId={sft.tokenId} imgSrc={sft.imgSrc} tierId={sft.tierId} status={sft.status} />
+                </div>
+              )}
         </div>
       </div>
     </div>
