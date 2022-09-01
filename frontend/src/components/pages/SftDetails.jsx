@@ -1,6 +1,6 @@
 import React from 'react';
 import { useParams } from "react-router-dom";
-import getSftDetails from "../../helpers/sftsMock";
+import { getSftDetails } from "../../blockchainAgent";
 import LoadingComponent from "../shared/LoadingComponent";
 
 function SftDetails() {

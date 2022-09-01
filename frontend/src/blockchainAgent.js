@@ -40,7 +40,7 @@ async function getPoolData(poolId) {
 }
 
 
-async function getMySFTs(poolId) {
+async function getPoolSFTs(poolId) {
   try {
     const signer = provider.getSigner();
 
@@ -56,42 +56,79 @@ async function getMySFTs(poolId) {
       SFTJSON.abi,
       provider
     );
-    const userAddress = await signer.getAddress();
-    const amounts = [];
-    for (let i = 10; i < 15; i++) {
-      let amountTier = await tokenContract.balanceOf(userAddress, i);
-      amounts.push(amountTier);
-    }
 
-    // TODO: get image urls from ipfs
-    // const images = [];
-    // for (let i = 0; i < 5; i++) {
-    //   let metaData = await tokenContract.uri(i);
-    //   let metaJson = await fetch(metaData)
-    //     .then((res) => console.log(res))
-    //     .then((out) => console.log("Checkout this JSON! ", out))
-    //     .catch((err) => toast.error("Upload Error: " + err.message));
-    //   console.log(metaJson);
-    //   let imageSrc = metaJson.image;
-    //   images.push(imageSrc);
-    // }
+    const userAddress = await signer.getAddress();
+    const sfts = [];
+
+    for (let i = 0; i < 5; i++) {
+      let tokenId = poolId * 10 + i;
+      let amountTier = await tokenContract.balanceOf(userAddress, tokenId);
+      if (amountTier > 0) {
+        let sftDetails = getSftDetails(tokenId);
+        sfts.push({
+          tokenId: tokenId,
+          tierId: i,
+          amount: amountTier,
+          imgSrc: sftDetails.imgSrc,
+          status: sftDetails.status
+        });
+      }
+    }
 
     let item = {
       owner: userAddress,
       tokenAddress: tokenAddress,
       // tokenContract: tokenContract,
-      amountsTier: amounts,
+      sfts: sfts,
     };
 
     console.log(item);
 
     return item;
   } catch (e) {
-    toast.error("Upload Error: " + e.message);
+    toast.error("Error: " + e.message);
+  }
+}
+
+function getSftDetails(tokenId) {
+  
+  // TODO: get image urls from ipfs
+  // const images = [];
+  // for (let i = 0; i < 5; i++) {
+  //   let metaData = await tokenContract.uri(i);
+  //   let metaJson = await fetch(metaData)
+  //     .then((res) => console.log(res))
+  //     .then((out) => console.log("Checkout this JSON! ", out))
+  //     .catch((err) => toast.error("Upload Error: " + err.message));
+  //   console.log(metaJson);
+  //   let imageSrc = metaJson.image;
+  //   images.push(imageSrc);
+  // }
+
+  if (tokenId == 11) {
+    return {
+      id: 1,
+      imgSrc: "https://gateway.pinata.cloud/ipfs/QmRf7fdqC5WVryZmfXH5PnHXs4SUzPfQ3RUrpwfDSvzTAa",
+      poolId: 1,
+      tierId: 1,
+      poolStatus: "Open",
+      status: "Health Level 3, OK!"
+    }
+  } else {
+    
+    return {
+      id: 2,
+      imgSrc: "https://gateway.pinata.cloud/ipfs/QmSoE4z3fqGunb9RWrLq9MzDE3qibJZoYgrPnfjCzdH748",
+      poolId: 1,
+      tierId: 2,
+      poolStatus: "Closed",
+      status: "Health Level 4, looking happy!"
+    }
   }
 }
 
 export {
   getPoolData,
-  getMySFTs
+  getPoolSFTs,
+  getSftDetails
 }

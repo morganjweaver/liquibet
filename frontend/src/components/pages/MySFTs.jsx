@@ -4,14 +4,14 @@ import { ethers, utils } from "ethers";
 import { useParams } from "react-router-dom";
 import NftListItem from "../NftListItem";
 import { useEffect } from "react";
-import { getMySFTs } from "../../blockchainAgent";
+import { getPoolSFTs } from "../../blockchainAgent";
 import LoadingComponent from "../shared/LoadingComponent";
 
 function MySFTs() {
   const [dataFetched, updateDataFetched] = useState(false);
   const [data, updateData] = useState({});
   const params = useParams();
-  const poolId = params.id;
+  const poolId = 1;
 
   let images = [
     "https://gateway.pinata.cloud/ipfs/QmaJ3ry7QYUjvCgao4oNF11qhhfeP9ThNkTCWFfM4Lqhqv",
@@ -23,7 +23,8 @@ function MySFTs() {
 
   useEffect(() => {
     (async () => {
-      let item = await getMySFTs(poolId);
+      let item = await getPoolSFTs(poolId);
+      console.log(item);
       updateData(item);
       updateDataFetched(true);
     })();
@@ -38,16 +39,12 @@ function MySFTs() {
         This page shows the amount of all SFTs of user {data.owner}.
       </h2>
       <div className="mt-4 px-2 grid grid-flow-row grid-cols-5 grid-rows-2 justify-center items-center pt-5 text-white">
-        {images.map((image, id) => (
+        {data.sfts.map((sft, id) => (
           <NftListItem
             key={id}
-            image={image}
-            tier={id + 1}
-            amount={
-              data.amountsTier != undefined
-                ? utils.formatUnits(data.amountsTier[id], 0)
-                : 0
-            }
+            image={sft.imgSrc}
+            tier={sft.tokenId}
+            amount={utils.formatUnits(data.sfts[id].amount, 0)}
           />
         ))}
       </div>

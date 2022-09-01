@@ -41,6 +41,10 @@
   box-shadow: 0px 4px 97px rgba(255, 86, 246, 0.51);
   backdrop-filter: blur(192px);
 }
+
+.background-opaque {
+  background:rgba(255, 86, 246, 0.4)
+}
 /*
  * The Typekit service used to deliver this font or fonts for use on websites
  * is provided by Adobe and is subject to these Terms of Use
