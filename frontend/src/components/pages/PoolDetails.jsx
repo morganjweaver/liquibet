@@ -34,12 +34,15 @@ function PoolDetails() {
       // TODO did not manage to transform poolData.contractFee form hex to decimals
       const feePrice = utils.parseUnits("10000000", "wei");
       const totalPrice = salePrice.add(feePrice);
-      updateMessage("Buying the SFT... Please Wait (Upto 5 mins)");
+      updateMessage("Buying the SFT... Please Wait (Up to 5 mins)");
       //run the executeSale function
       let transaction = await contract.buyIn(1, tierId, 1, {
         value: totalPrice,
       });
       await transaction.wait();
+
+      let poolSfts = await getPoolSFTs(poolId);
+      updatePoolSfts(poolSfts);
 
       toast.success("You successfully bought the SFT!");
       updateMessage("");
@@ -90,13 +93,13 @@ function PoolDetails() {
                         buySFT={buySFT} />)}
             </div>
           </div>
-          <div className="text-center my-1">{message}</div>
         </div>
+        <div className="text-center my-1">{message}</div>
         <div className="mt-4 text-center">
           <h2>My SFTs</h2>
           <hr className="my-2 border-[#B5289E]"/>
           {poolSfts.sfts.map(sft =>  
-            <SmallSftCard key={sft.tokenId} tokenId={sft.tokenId} imgSrc={sft.imgSrc} tierId={sft.tierId} status={sft.status} />
+            <SmallSftCard key={sft.tokenId} amount={sft.amount} tokenId={sft.tokenId} imgSrc={sft.imgSrc} tierId={sft.tierId} status={sft.status} />
           )}
         </div>
       </div>

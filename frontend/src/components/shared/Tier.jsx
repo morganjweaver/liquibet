@@ -7,7 +7,7 @@ function Tier({tierId, buyInPrice, liquidationPrice, buySFT}) {
         className="tier-btn text-white font-bold py-2 px-4 text-sm"
         onClick={() => buySFT(tierId, buyInPrice)}
       >
-        BUY TIER {tierId + 1}
+        BUY TIER {tierId}
       </button>
       <span className="inline-block ml-3">Buyin price: {buyInPrice} ETH, Liquidation level: {liquidationPrice}%</span>
     </div>

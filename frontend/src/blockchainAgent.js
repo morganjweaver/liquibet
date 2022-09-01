@@ -68,7 +68,7 @@ async function getPoolSFTs(poolId) {
         sfts.push({
           tokenId: tokenId,
           tierId: i,
-          amount: amountTier,
+          amount: parseInt(utils.formatUnits(amountTier, 0)),
           imgSrc: sftDetails.imgSrc,
           status: sftDetails.status
         });
