@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 function NftListItem({ image, tier, amount, tokenId }) {
   // const file = item.item.metadata;
   return (
-    <div className="justify-center items-center text-center mx-2 mb-5 border-2 border-pink-400 rounded">
+    <div className="inline-block mb-5 mr-4 border-2 border-pink-400 rounded">
       <div className="text-center">
         <p>Tier {tier}</p>
         <p>Amount: {amount}</p>
@@ -15,7 +15,7 @@ function NftListItem({ image, tier, amount, tokenId }) {
         style={{ height: "320px" }}
         alt=""
       />
-      <div className="p-2">
+      <div className="p-2 text-center">
         <Link to={`/sft/${tokenId}`}>View details</Link>
       </div>
     </div>

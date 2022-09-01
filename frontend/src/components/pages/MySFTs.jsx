@@ -10,6 +10,7 @@ import LoadingComponent from "../shared/LoadingComponent";
 function MySFTs() {
   const [dataFetched, updateDataFetched] = useState(false);
   const [data, updateData] = useState({});
+  const [data2, updateData2] = useState({});
   const params = useParams();
   const poolId = 1;
 
@@ -24,8 +25,10 @@ function MySFTs() {
   useEffect(() => {
     (async () => {
       let item = await getPoolSFTs(poolId);
+      let item2 = await getPoolSFTs(2);
       console.log(item);
       updateData(item);
+      updateData2(item2);
       updateDataFetched(true);
     })();
   }, []);
@@ -34,9 +37,21 @@ function MySFTs() {
 
   return (
     <div className="px-16 mt-4 bg-primary font-1 text-white">
-    <h1>POOL {poolId}</h1>
-      <div className="grid grid-flow-row grid-cols-5 grid-rows-2 justify-center items-center pt-5">
+      <h1 className="mb-3">POOL {poolId}</h1>
+      <div className="">
         {data.sfts.map((sft, id) => (
+          <NftListItem
+            key={id}  
+            image={sft.imgSrc}
+            tier={sft.tierId}
+            tokenId={sft.tokenId}
+            amount={utils.formatUnits(data.sfts[id].amount, 0)}
+          />
+        ))}
+      </div>
+      <h1 className="mb-3">POOL 2</h1>
+      <div className="">
+        {data2.sfts.map((sft, id) => (
           <NftListItem
             key={id}  
             image={sft.imgSrc}
