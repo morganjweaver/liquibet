@@ -7,11 +7,10 @@ function formatDateTime(timestamp) {
 
 function formatPeriod(timestamp) {
   
-  var date = new Date(formatTimestamp(timestamp));
-  
-  var hours = date.getHours();
-  var minutes = "0" + date.getMinutes();
-  var seconds = "0" + date.getSeconds();
+  let d = Number(timestamp);
+  var hours = Math.floor(d / 3600);
+  var minutes = Math.floor(d % 3600 / 60);
+  var seconds = Math.floor(d % 3600 % 60);
   
   // Will display time in 10:30:23 format
   return `${hours}h : ${minutes}m : ${seconds}s`;
