@@ -5,7 +5,6 @@ import { environment } from "../../environment";
 import { toast } from 'react-toastify';
 import { ethers, utils } from 'ethers';
 import Tier from "../shared/Tier";
-import { Link } from "react-router-dom";
 import { useParams } from "react-router-dom";
 import SmallSftCard from "../shared/SmallSftCard";
 import { getPoolData, getPoolSFTs } from "../../blockchainAgent";

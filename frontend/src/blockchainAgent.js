@@ -7,14 +7,17 @@ import { toast } from "react-toastify";
   
 const provider = new ethers.providers.Web3Provider(window.ethereum);
 
-async function getPoolData(poolId) {
-
-  let contract = new ethers.Contract(
+function getLiquibetContract(signer) {
+  return new ethers.Contract(
     environment.liquibetContractAddress,
     LiquibetJSON.abi,
-    provider
+    signer
   );
+}
 
+async function getPoolData(poolId) {
+
+  const contract = getLiquibetContract(provider);
   const pool = await contract.pools(poolId);
   const fee = await contract.fee();
 
@@ -44,11 +47,7 @@ async function getPoolSFTs(poolId) {
   try {
     const signer = provider.getSigner();
 
-    let contract = new ethers.Contract(
-      environment.liquibetContractAddress,
-      LiquibetJSON.abi,
-      signer
-    );
+    let contract = getLiquibetContract(signer);
 
     const tokenAddress = await contract.token();
     let tokenContract = new ethers.Contract(
@@ -88,6 +87,36 @@ async function getPoolSFTs(poolId) {
   } catch (e) {
     toast.error("Error: " + e.message);
   }
+}
+
+async function getSft(tokenId) {
+  const signer = provider.getSigner();
+  const userAddress = await signer.getAddress();
+  
+  const contract = getLiquibetContract(signer);
+  const tokenAddress = await contract.token();
+
+  let tokenContract = new ethers.Contract(
+    tokenAddress,
+    SFTJSON.abi,
+    provider
+  );
+  
+  let amountTier = await tokenContract.balanceOf(userAddress, tokenId);
+  
+  if (amountTier === 0) {
+    throw Error("User has no tokens of givven tokenId");
+  }
+
+  let sftDetails = getSftDetails(tokenId);
+  
+  return {
+    tokenId: tokenId,
+    tierId: tokenId % 10,
+    amount: parseInt(utils.formatUnits(amountTier, 0)),
+    imgSrc: sftDetails.imgSrc,
+    status: sftDetails.status
+  };
 }
 
 function getSftDetails(tokenId) {
@@ -130,5 +159,6 @@ function getSftDetails(tokenId) {
 export {
   getPoolData,
   getPoolSFTs,
-  getSftDetails
+  getSftDetails,
+  getSft
 }

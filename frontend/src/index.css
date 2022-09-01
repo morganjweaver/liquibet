@@ -54,6 +54,11 @@
 .background-opaque {
   background:rgba(255, 86, 246, 0.4)
 }
+
+.sft-details .details-text span {
+  padding: 5px 10px;
+}
+
 /*
  * The Typekit service used to deliver this font or fonts for use on websites
  * is provided by Adobe and is subject to these Terms of Use
