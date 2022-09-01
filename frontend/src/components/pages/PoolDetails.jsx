@@ -69,7 +69,7 @@ function PoolDetails() {
     <div className="text-white font-1 mt-2">
       <div className="relative">
         <h1 className="text-center text-4xl">Pool {poolId}</h1>
-        <span className="rounded bg-red-400 py-1 px-3 absolute left-8 top-2">CLOSED</span>
+        {poolData.isPoolResolved && <span className="rounded bg-red-400 py-1 px-3 absolute left-8 top-2">CLOSED</span>}
       </div>
       <div className="pool-details w-100 h-200 mb-5 mt-2 py-4 px-4">
         <div className="flex">
