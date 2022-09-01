@@ -1,8 +1,6 @@
 import React from 'react'
 
 function  ResolvedPoolDetailsMock({id, tier, assetPair}) {
-  console.log("lowestPrice: " + assetPair.lowestPrice);
-  console.log("price: " + assetPair.referencePrice * (tier.liquidationPrice / 100));
   let liquidated = assetPair.lowestPrice < assetPair.referencePrice - assetPair.referencePrice * (tier.liquidationPrice / 100);
   return (
     <div className='text-white'>

@@ -56,7 +56,7 @@ function PoolDetails() {
       let poolData = await getPoolData(poolId);
       let poolSfts = await getPoolSFTs(poolId);
       console.log("poolData: " + poolData.isPoolResolved);
-      console.log("poolSfts: " + poolSfts);
+      console.log("poolSfts: " + poolSfts.sfts);
       updatePoolData(poolData);
       updatePoolSfts(poolSfts);
       updateDataFetched(true);
@@ -67,7 +67,10 @@ function PoolDetails() {
 
   return (
     <div className="text-white font-1 mt-2">
-      <h1 className="text-center text-4xl">Pool {poolId}</h1>
+      <div className="relative">
+        <h1 className="text-center text-4xl">Pool {poolId}</h1>
+        <span className="rounded bg-red-400 py-1 px-3 absolute left-8 top-2">CLOSED</span>
+      </div>
       <div className="pool-details w-100 h-200 mb-5 mt-2 py-4 px-4">
         <div className="flex">
           <div className="w-1/2">
@@ -89,7 +92,7 @@ function PoolDetails() {
                 <div>
                   <p>Reference price: {poolData.assetPair.referencePrice}$</p>
                   <p>Lowest price: {poolData.assetPair.lowestPrice}$</p>
-                  {poolData.tiers.map((tier, i) => <ResolvedPoolDetailsMock id={i} tier={tier} assetPair={poolData.assetPair} />)}
+                  {poolData.tiers.map((tier, i) => <ResolvedPoolDetailsMock key={i} id={i} tier={tier} assetPair={poolData.assetPair} />)}
 
                 </div>
               )}
@@ -112,10 +115,10 @@ function PoolDetails() {
           )}
 {/*           
           {poolData.isPoolResolved && (
-                <div>
-                  <SmallSftCard key={sft.tokenId} amount={sft.amount} tokenId={sft.tokenId} imgSrc={sft.imgSrc} tierId={sft.tierId} status={sft.status} />
-                </div>
-              )} */}
+            <div>
+              <SmallSftCard key={sft.tokenId} amount={sft.amount} tokenId={sft.tokenId} imgSrc={sft.imgSrc} tierId={sft.tierId} status={sft.status} />
+            </div>
+          )} */}
         </div>
       </div>
     </div>

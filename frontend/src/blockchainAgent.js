@@ -81,9 +81,27 @@ async function getPoolData(poolId) {
   return item;
 }
 
+function getMockPoolSfts() {
+  let sfts = [
+    {
+      tokenId: 11,
+      tierId: 1,
+      amount: 1,
+      imgSrc: "https://gateway.pinata.cloud/ipfs/QmdKf5YL2ppZ3wJ1sgyCfUffq8dewbCCcfDscCfkTWorKn",
+      status: "Oh noes! R U DED? :("
+    }
+  ]
+  return {
+    sfts: sfts,
+  }
+}
 
 async function getPoolSFTs(poolId) {
   try {
+    if (poolId == 2) {
+      return getMockPoolSfts();
+    }
+
     const signer = provider.getSigner();
 
     let contract = getLiquibetContract(signer);
