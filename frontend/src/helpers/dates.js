@@ -22,5 +22,6 @@ function formatTimestamp(timestamp) {
 
 export {
   formatDateTime,
-  formatPeriod
+  formatPeriod,
+  formatTimestamp
 }

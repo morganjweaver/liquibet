@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import SmallPoolCard from "../shared/SmallPoolCard";
 import { getPoolData } from "../../blockchainAgent";
 import LoadingComponent from "../shared/LoadingComponent";
+import { formatDateTime, formatPeriod } from "../../helpers/dates";
 
 function Home() {
 
@@ -40,10 +41,10 @@ function Home() {
                 imgSrc="/images/Ethereum-logo.png" />
               <SmallPoolCard 
                 poolId={2} 
-                startDateTime={data.startDateTime} 
-                lockPeriod={data.lockPeriod}
-                asset="BTCUSD"
-                imgSrc="/images/Bitcoin-logo.png" />
+                startDateTime={formatDateTime(1661859600)} 
+                lockPeriod={formatPeriod(129600)}
+                asset="ETHUSD"
+                imgSrc="/images/Ethereum-logo.png" />
           </div>
         )}
     </div>

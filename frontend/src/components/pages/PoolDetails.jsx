@@ -110,12 +110,12 @@ function PoolDetails() {
           {poolSfts.sfts.map(sft =>  
             <SmallSftCard key={sft.tokenId} amount={sft.amount} tokenId={sft.tokenId} imgSrc={sft.imgSrc} tierId={sft.tierId} status={sft.status} />
           )}
-          
+{/*           
           {poolData.isPoolResolved && (
                 <div>
                   <SmallSftCard key={sft.tokenId} amount={sft.amount} tokenId={sft.tokenId} imgSrc={sft.imgSrc} tierId={sft.tierId} status={sft.status} />
                 </div>
-              )}
+              )} */}
         </div>
       </div>
     </div>
