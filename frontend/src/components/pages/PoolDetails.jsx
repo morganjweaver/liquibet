@@ -1,5 +1,5 @@
 import React from "react";
-import LiquibetJSON from "../../Liquibet.json";
+import LiquibetJSON from "../../contracts/Liquibet.json";
 import { useState, useEffect } from "react";
 import { environment } from "../../environment";
 import { toast } from 'react-toastify';

@@ -1,8 +1,8 @@
-import LiquibetJSON from "./Liquibet.json";
+import LiquibetJSON from "./contracts/Liquibet.json";
 import { environment } from "./environment";
 import { ethers, utils } from 'ethers';
 import { formatDateTime, formatPeriod } from "./helpers/dates";
-import SFTJSON from "./SFT.json";
+import SFTJSON from "./contracts/SFT.json";
 import { toast } from "react-toastify";
   
 const provider = new ethers.providers.Web3Provider(window.ethereum);
