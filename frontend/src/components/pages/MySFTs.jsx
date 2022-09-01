@@ -5,14 +5,13 @@ import { useParams } from "react-router-dom";
 import NftListItem from "../NftListItem";
 import { useEffect } from "react";
 import { getMySFTs } from "../../blockchainAgent";
+import LoadingComponent from "../shared/LoadingComponent";
 
 function MySFTs() {
   const [dataFetched, updateDataFetched] = useState(false);
   const [data, updateData] = useState({});
   const params = useParams();
   const poolId = params.id;
-
-  const provider = new ethers.providers.Web3Provider(window.ethereum);
 
   let images = [
     "https://gateway.pinata.cloud/ipfs/QmaJ3ry7QYUjvCgao4oNF11qhhfeP9ThNkTCWFfM4Lqhqv",
@@ -29,6 +28,8 @@ function MySFTs() {
       updateDataFetched(true);
     })();
   }, []);
+  
+  if (!dataFetched) return <LoadingComponent />;
 
   return (
     <div className="px-16 bg-primary h-screen">

@@ -10,6 +10,7 @@ import { Link } from "react-router-dom";
 import { useParams } from "react-router-dom";
 import SmallSftCard from "../shared/SmallSftCard";
 import { getPoolData } from "../../blockchainAgent";
+import LoadingComponent from "../shared/LoadingComponent";
 
 function PoolDetails() {
   const [dataFetched, updateDataFetched] = useState(false);
@@ -54,6 +55,8 @@ function PoolDetails() {
       updateDataFetched(true);
     })();
   }, []);
+
+  if (!dataFetched) return <LoadingComponent />;
 
   return (
     <div className="text-white font-1 mt-2">

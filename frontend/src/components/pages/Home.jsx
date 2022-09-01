@@ -2,6 +2,7 @@ import React from "react";
 import { useState, useEffect } from "react";
 import SmallPoolCard from "../shared/SmallPoolCard";
 import { getPoolData } from "../../blockchainAgent";
+import LoadingComponent from "../shared/LoadingComponent";
 
 function Home() {
 
@@ -27,18 +28,24 @@ function Home() {
       <p className="mt-8 text-white font-1">
         A dynamic SFT Asset Derivative with Gambling and Lottery Mechanics
       </p>
-      <div className="text-center">
-        <SmallPoolCard poolId={1} 
-                      startDateTime={data.startDateTime} 
-                      lockPeriod={data.lockPeriod}
-                      asset={data.asset}
-                      imgSrc="/images/Ethereum-logo.png" />
-        <SmallPoolCard poolId={2} 
-                      startDateTime={data.startDateTime} 
-                      lockPeriod={data.lockPeriod}
-                      asset="BTCUSD"
-                      imgSrc="/images/Bitcoin-logo.png" />
-      </div>
+        {!dataFetched && <LoadingComponent />}
+        
+        {dataFetched && (
+          <div className="text-center">
+              <SmallPoolCard 
+                poolId={1} 
+                startDateTime={data.startDateTime} 
+                lockPeriod={data.lockPeriod}
+                asset={data.asset}
+                imgSrc="/images/Ethereum-logo.png" />
+              <SmallPoolCard 
+                poolId={2} 
+                startDateTime={data.startDateTime} 
+                lockPeriod={data.lockPeriod}
+                asset="BTCUSD"
+                imgSrc="/images/Bitcoin-logo.png" />
+          </div>
+        )}
     </div>
   );
 }
