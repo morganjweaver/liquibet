@@ -1,16 +1,10 @@
 import React from "react";
-import LiquibetJSON from "../../Liquibet.json";
-import SFTJSON from "../../SFT.json";
 import { useState } from "react";
-import { environment } from "../../environment";
-import { toast } from "react-toastify";
 import { ethers, utils } from "ethers";
-import { formatDateTime, formatPeriod } from "../../helpers/dates";
-import Tier from "../shared/Tier";
-import { Link } from "react-router-dom";
 import { useParams } from "react-router-dom";
 import NftListItem from "../NftListItem";
 import { useEffect } from "react";
+import { getMySFTs } from "../../blockchainAgent";
 
 function MySFTs() {
   const [dataFetched, updateDataFetched] = useState(false);
@@ -28,60 +22,13 @@ function MySFTs() {
     "https://gateway.pinata.cloud/ipfs/QmPLUVrJ4vYm6PMnUGzUcqrwq3Xvk3SPN7wK3YtwcgDyGC",
   ];
 
-  async function getMySFTs() {
-    try {
-      const signer = provider.getSigner();
-
-      let contract = new ethers.Contract(
-        environment.liquibetContractAddress,
-        LiquibetJSON.abi,
-        signer
-      );
-
-      const tokenAddress = await contract.token();
-      let tokenContract = new ethers.Contract(
-        tokenAddress,
-        SFTJSON.abi,
-        provider
-      );
-      const userAddress = await signer.getAddress();
-      const amounts = [];
-      for (let i = 10; i < 15; i++) {
-        let amountTier = await tokenContract.balanceOf(userAddress, i);
-        amounts.push(amountTier);
-      }
-
-      // TODO: get image urls from ipfs
-      // const images = [];
-      // for (let i = 0; i < 5; i++) {
-      //   let metaData = await tokenContract.uri(i);
-      //   let metaJson = await fetch(metaData)
-      //     .then((res) => console.log(res))
-      //     .then((out) => console.log("Checkout this JSON! ", out))
-      //     .catch((err) => toast.error("Upload Error: " + err.message));
-      //   console.log(metaJson);
-      //   let imageSrc = metaJson.image;
-      //   images.push(imageSrc);
-      // }
-
-      let item = {
-        owner: userAddress,
-        tokenAddress: tokenAddress,
-        // tokenContract: tokenContract,
-        amountsTier: amounts,
-      };
-
-      console.log(item);
+  useEffect(() => {
+    (async () => {
+      let item = await getMySFTs(poolId);
       updateData(item);
       updateDataFetched(true);
-    } catch (e) {
-      toast.error("Upload Error: " + e.message);
-    }
-  }
-  useEffect(() => {
-    getMySFTs();
+    })();
   }, []);
-  // if (!dataFetched) getMySFTs();
 
   return (
     <div className="px-16 bg-primary h-screen">
@@ -97,7 +44,7 @@ function MySFTs() {
             tier={id + 1}
             amount={
               data.amountsTier != undefined
-                ? parseInt(data.amountsTier[id]._hex)
+                ? utils.formatUnits(data.amountsTier[id], 0)
                 : 0
             }
           />

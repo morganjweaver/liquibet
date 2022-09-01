@@ -1,11 +1,7 @@
 import React from "react";
-import LiquibetJSON from "../../Liquibet.json";
-import { useState } from "react";
-import { environment } from "../../environment";
-import { toast } from 'react-toastify';
-import { ethers, utils } from 'ethers';
-import { formatDateTime, formatPeriod } from "../../helpers/dates";
+import { useState, useEffect } from "react";
 import SmallPoolCard from "../shared/SmallPoolCard";
+import { getPoolData } from "../../blockchainAgent";
 
 function Home() {
 
@@ -13,41 +9,14 @@ function Home() {
   const [data, updateData] = useState({});
   
   const poolId = 1;
-  const provider = new ethers.providers.Web3Provider(window.ethereum);
   
-  let contract = new ethers.Contract(
-    environment.liquibetContractAddress,
-    LiquibetJSON.abi,
-    provider
-  );
-  
-  async function getPoolData() {
-  
-    const pool = await contract.pools(poolId);
-    const fee = await contract.fee();
-  
-    let tiersCount = 5;
-    let tiers = [];
-    for(let i = 0; i < tiersCount; i++) {
-      let tier = await contract.tiers(1, i);
-      tiers.push(tier);
-    }
-  
-    let item = {
-      asset: utils.parseBytes32String(pool.assetPair.name),
-      creatorFee: utils.formatEther(pool.creatorFee),
-      contractFee: utils.formatEther(fee),
-      startDateTime: formatDateTime(pool.startDateTime),
-      lockPeriod: formatPeriod(pool.lockPeriod),
-      tiers: tiers
-    };
-    
-    console.log(item);
-    updateData(item);
-    updateDataFetched(true);
-  }
-  
-  if (!dataFetched) getPoolData();
+  useEffect(() => {
+    (async () => {
+      let item = await getPoolData(poolId);
+      updateData(item);
+      updateDataFetched(true);
+    })();
+  }, []);
 
   return (
     <div className="">

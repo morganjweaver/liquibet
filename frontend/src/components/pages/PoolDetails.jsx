@@ -1,6 +1,6 @@
 import React from "react";
 import LiquibetJSON from "../../Liquibet.json";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { environment } from "../../environment";
 import { toast } from 'react-toastify';
 import { ethers, utils } from 'ethers';
@@ -9,6 +9,7 @@ import Tier from "../shared/Tier";
 import { Link } from "react-router-dom";
 import { useParams } from "react-router-dom";
 import SmallSftCard from "../shared/SmallSftCard";
+import { getPoolData } from "../../blockchainAgent";
 
 function PoolDetails() {
   const [dataFetched, updateDataFetched] = useState(false);
@@ -18,40 +19,6 @@ function PoolDetails() {
   const params = useParams();
   const poolId = params.id;
   const provider = new ethers.providers.Web3Provider(window.ethereum);
-
-  let contract = new ethers.Contract(
-    environment.liquibetContractAddress,
-    LiquibetJSON.abi,
-    provider
-  );
-
-  async function getPoolData() {
-
-    const pool = await contract.pools(poolId);
-    const fee = await contract.fee();
-
-    let tiersCount = 5;
-    let tiers = [];
-    for(let i = 0; i < tiersCount; i++) {
-      let tier = await contract.tiers(1, i);
-      tiers.push(tier);
-    }
-
-    let item = {
-      asset: utils.parseBytes32String(pool.assetPair.name),
-      creatorFee: utils.formatEther(pool.creatorFee),
-      contractFee: utils.formatEther(fee),
-      startDate: formatDateTime(pool.startDateTime),
-      lockPeriod: formatPeriod(pool.lockPeriod),
-      stakingApy: utils.formatUnits(pool.stakingInfo.apy, 0),
-      amountStaked: utils.formatEther(pool.stakingInfo.amountStaked),
-      tiers: tiers
-    };
-    
-    console.log(item);
-    updateData(item);
-    updateDataFetched(true);
-  }
 
   async function buySFT(tierId, price) {
     try {
@@ -80,7 +47,13 @@ function PoolDetails() {
     }
   }
 
-  if (!dataFetched) getPoolData();
+  useEffect(() => {
+    (async () => {
+      let item = await getPoolData(poolId);
+      updateData(item);
+      updateDataFetched(true);
+    })();
+  }, []);
 
   return (
     <div className="text-white font-1 mt-2">
@@ -93,7 +66,7 @@ function PoolDetails() {
             <p>Asset: {data.asset}</p>
             <p>APY: {data.stakingApy}%</p> 
             <p>Total amount: {data.amountStaked} ETH</p>
-            <p>Start Date: {data.startDate}</p>
+            <p>Start Date: {data.startDateTime}</p>
             <p>Lock Period: {data.lockPeriod}</p>
             <p>Creator Fee: {data.creatorFee} ETH</p>
             <p>Contract Fee: {data.contractFee} ETH</p>
