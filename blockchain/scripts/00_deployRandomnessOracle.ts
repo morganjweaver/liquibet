@@ -1,6 +1,6 @@
 import { ethers, Contract } from "ethers"; // Hardhat for testing
 import "dotenv/config";
-import * as VRFJSON from "../artifacts/contracts/VRFOracle.sol/VRFv2Consumer.json";
+import * as VRFJSON from "../artifacts/contracts/VRFv2Consumer.sol/VRFv2Consumer.json";
 import { VRFv2Consumer } from "../typechain-types";
 import {
   getSigner,

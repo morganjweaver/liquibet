@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "./interfaces/IERC1155Token.sol";
 import "./interfaces/IStakingProvider.sol";
-import "./VRFOracle.sol";
+import "./VRFv2Consumer.sol";
 import "./SFT.sol";
 
 ///@title Liquibet gambling / lottery contract
