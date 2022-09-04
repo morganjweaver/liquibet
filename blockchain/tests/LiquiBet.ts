@@ -10,6 +10,8 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 // eslint-disable-next-line node/no-unpublished-import
 import { BigNumber, ContractReceipt, ContractTransaction } from "ethers";
 import { addSeconds, toSeconds } from "../helpers/dates";
+import { networkConfig } from "../helper-hardhat-config";
+import { LinkToken } from "../typechain-types";
 
 const TOKEN_UPDATE_INTERVAL = 100;
 const LIQUIBET_CONTRACT_FEE = 0.01;
@@ -214,6 +216,9 @@ describe("Liquibet contract", async () => {
 });
 
 async function initContracts(accounts: SignerWithAddress[]): Promise<ILiquibetContracts> {
+  const chainId: number | undefined = network.config.chainId;
+  if (!chainId) throw Error("ChainId undefined");
+
   const liquiBetContractFactory = await ethers.getContractFactory("Liquibet");
   const aggregatorContractFactory = await ethers.getContractFactory("MockV3Aggregator");
   const vrfContractFactory = await ethers.getContractFactory("VRFCoordinatorV2Mock");
@@ -242,10 +247,18 @@ async function initContracts(accounts: SignerWithAddress[]): Promise<ILiquibetCo
   const subscriptionId = ethers.BigNumber.from(txReceipt.events[0].topics[1]);
   await vrfContract.fundSubscription(subscriptionId, fundAmount);
 
+  const linkTokenFactory = await ethers.getContractFactory("LinkToken");
+  const linkTokenContract = await linkTokenFactory.deploy() as LinkToken;
+  await linkTokenContract.deployed();
+
   const vrfConsumerContract = await vrfConsumerContractFactory.deploy(
-    subscriptionId
+    subscriptionId,
+    vrfContract.address,
+    linkTokenContract.address,
+    networkConfig[chainId].keyHash
   ) as VRFv2Consumer;
   await vrfConsumerContract.deployed();
+  await vrfConsumerContract.requestRandomWords();
 
   const liquiBetContract = await liquiBetContractFactory.deploy(
     TOKEN_UPDATE_INTERVAL,

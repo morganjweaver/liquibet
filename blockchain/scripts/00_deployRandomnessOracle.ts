@@ -34,7 +34,7 @@ async function main() {
     VRFJSON.abi,
     signer
   ) as VRFv2Consumer;
-  VRFConsumer.requestRandomWords(); //load randomness
+  await VRFConsumer.requestRandomWords(); //load randomness
   console.log("Requested random words for lottery");
 }
 
