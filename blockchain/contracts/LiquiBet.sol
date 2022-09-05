@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "./interfaces/IERC1155Token.sol";
 import "./interfaces/IStakingProvider.sol";
-import "./VRFOracle.sol";
+import "./VRFv2Consumer.sol";
 import "./SFT.sol";
 
 ///@title Liquibet gambling / lottery contract
@@ -48,9 +48,10 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
     uint256 referencePrice;
   }
 
+  VRFv2Consumer immutable VRFOracle; // randomness oracle
+  SFT public immutable token;
+  
   uint256 public fee;  // fee should be large enough to cover contract operating expenses
-  VRFv2Consumer public VRFOracle; // randomness oracle
-  SFT public token;
   mapping(uint256 => Pool) public pools;
   uint256[] public poolIds;
   uint256 lastPriceFeedUpdate;

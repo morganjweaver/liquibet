@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { ethers, network } from "hardhat";
 // eslint-disable-next-line node/no-missing-import
-import { SFT, Staking } from "../typechain-types/contracts";
+import { SFT, Staking, VRFv2Consumer } from "../typechain-types/contracts";
 import { Liquibet } from "../typechain-types/contracts/LiquiBet.sol";
 import { MockV3Aggregator } from "../typechain-types/contracts/tests";
 import { VRFCoordinatorV2Mock } from "../typechain-types/@chainlink/contracts/src/v0.8/mocks";
@@ -10,9 +10,11 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 // eslint-disable-next-line node/no-unpublished-import
 import { BigNumber, ContractReceipt, ContractTransaction } from "ethers";
 import { addSeconds, toSeconds } from "../helpers/dates";
+import { networkConfig } from "../helper-hardhat-config";
+import { LinkToken } from "../typechain-types";
 
 const TOKEN_UPDATE_INTERVAL = 100;
-const LIQUIBET_CONTRACT_FEE = 100;
+const LIQUIBET_CONTRACT_FEE = 0.01;
 
 const ASSET_DECIMALS: string = `18`;
 const ASSET_INITIAL_PRICE: string = `200000000000000000000`;
@@ -73,9 +75,9 @@ describe("Liquibet contract", async () => {
   
   describe("When admin user creates new pool", async function() {
     
-    it("new pool is created with id 1", async function() {
+    it("new pool is created with correct poolId value", async function() {
       let poolId = await liquiBetContract.poolIds(0);
-      expect(poolId).to.eq(1);
+      expect(poolId).to.eq(POOL_ID);
     });
   });
   
@@ -87,9 +89,9 @@ describe("Liquibet contract", async () => {
 
     const TIER_ID = 0;
     const TOKEN_ID = 10;
-    const TIER_BUYIN_PRICE = 50;
+    const TIER_BUYIN_PRICE = 0.03;
     const TOTAL_BUYIN_PRICE = TIER_BUYIN_PRICE + LIQUIBET_CONTRACT_FEE;
-    const TIER_LIQUIDATION_PRICE = 7;
+    const TIER_LIQUIDATION_PERCENTAGE = 7;
     const TOKENS_AMOUNT = 1;
 
     beforeEach(async () => {
@@ -99,7 +101,7 @@ describe("Liquibet contract", async () => {
         TIER_ID,
         TOKENS_AMOUNT,
         {
-          value: ethers.utils.parseEther(TOTAL_BUYIN_PRICE.toFixed(0))
+          value: ethers.utils.parseEther(TOTAL_BUYIN_PRICE.toFixed(2))
         }  
       );
       const purchaseTokenTxReceipt = await tx.wait();
@@ -113,7 +115,7 @@ describe("Liquibet contract", async () => {
       const newAccountValue = await accounts[0].getBalance();
       const diff = accountValue.sub(newAccountValue);
       const expectedDiff = ethers.utils
-        .parseEther(TOTAL_BUYIN_PRICE.toFixed(0))
+        .parseEther(TOTAL_BUYIN_PRICE.toFixed(2))
         .add(txFee);
       expect(expectedDiff.sub(diff)).to.eq("0");
     });
@@ -167,14 +169,14 @@ describe("Liquibet contract", async () => {
         it("should calculate lottery prize for a player", async function() {
           const pool = await liquiBetContract.pools(POOL_ID);
           const apy = pool.stakingInfo[3];
-          const expectedPrize = (TIER_BUYIN_PRICE / 100) * Number(apy);
+          const expectedPrize = (Number(apy) / 100) * TIER_BUYIN_PRICE;
+          console.log("expectedPrize: " + expectedPrize);
 
           expect(Number(ethers.utils.formatEther(lotteryPrize))).to.eq(expectedPrize);
         });
 
         it("should calculate correct liquidation prize for each winning player", async function() {
-          //TODO should be Number(ethers.utils.formatEther(liquidationPrize)))
-          expect(liquidationPrize).to.eq(TIER_BUYIN_PRICE);
+          expect(Number(ethers.utils.formatEther(liquidationPrize))).to.eq(TIER_BUYIN_PRICE);
         });
         
         describe("When player withdraws funds", async function() {
@@ -214,9 +216,13 @@ describe("Liquibet contract", async () => {
 });
 
 async function initContracts(accounts: SignerWithAddress[]): Promise<ILiquibetContracts> {
+  const chainId: number | undefined = network.config.chainId;
+  if (!chainId) throw Error("ChainId undefined");
+
   const liquiBetContractFactory = await ethers.getContractFactory("Liquibet");
   const aggregatorContractFactory = await ethers.getContractFactory("MockV3Aggregator");
   const vrfContractFactory = await ethers.getContractFactory("VRFCoordinatorV2Mock");
+  const vrfConsumerContractFactory = await ethers.getContractFactory("VRFv2Consumer");
   
   const aggregatorContract: MockV3Aggregator = await aggregatorContractFactory.deploy(
     ASSET_DECIMALS,
@@ -232,19 +238,34 @@ async function initContracts(accounts: SignerWithAddress[]): Promise<ILiquibetCo
   ) as VRFCoordinatorV2Mock;
   await vrfContract.deployed();
   
-  const fundAmount: BigNumber = BigNumber.from(1000000000000);
+  const fundAmount: BigNumber = networkConfig[chainId].fundAmount;
   const vrfTx: ContractTransaction = await vrfContract.createSubscription();
   const txReceipt: ContractReceipt = await vrfTx.wait(1);
 
-  if (!txReceipt.events) throw Error("VrfCOntract setup error");
+  if (!txReceipt.events) throw Error("VrfContract setup error");
 
-  const subscriptionId = ethers.BigNumber.from(txReceipt.events[0].topics[1])
-  await vrfContract.fundSubscription(subscriptionId, fundAmount)
+  const subscriptionId = ethers.BigNumber.from(txReceipt.events[0].topics[1]);
+  await vrfContract.fundSubscription(subscriptionId, fundAmount);
+
+  const linkTokenFactory = await ethers.getContractFactory("LinkToken");
+  const linkTokenContract = await linkTokenFactory.deploy() as LinkToken;
+  await linkTokenContract.deployed();
+
+  const vrfConsumerContract = await vrfConsumerContractFactory.deploy(
+    subscriptionId,
+    vrfContract.address,
+    linkTokenContract.address,
+    networkConfig[chainId].keyHash
+  ) as VRFv2Consumer;
+  await vrfConsumerContract.deployed();
+  await vrfConsumerContract.requestRandomWords();
+  const requestId: BigNumber = await vrfConsumerContract.s_requestId();
+  await vrfContract.fulfillRandomWords(requestId, vrfConsumerContract.address);
 
   const liquiBetContract = await liquiBetContractFactory.deploy(
     TOKEN_UPDATE_INTERVAL,
     aggregatorContract.address, 
-    vrfContract.address,
+    vrfConsumerContract.address,
     ethers.utils.parseEther(LIQUIBET_CONTRACT_FEE.toFixed(18)),
   ) as Liquibet;
   await liquiBetContract.deployed();
@@ -257,8 +278,9 @@ async function initContracts(accounts: SignerWithAddress[]): Promise<ILiquibetCo
   const stakingContract = await stakingContractFactory.deploy(10) as Staking;
   await stakingContract.deployed();
 
-  // fund the staking contract
-  accounts[0].sendTransaction({ to: stakingContract.address, value: ethers.utils.parseEther("10.0")});
+  // fund the liquibet and staking contract
+  accounts[9].sendTransaction({ to: liquiBetContract.address, value: ethers.utils.parseEther("10.0")});
+  accounts[9].sendTransaction({ to: stakingContract.address, value: ethers.utils.parseEther("10.0")});
 
   return {
     aggregatorContract,

@@ -31,6 +31,7 @@
   },
   "dependencies": {
     "@chainlink/contracts": "^0.4.1",
+    "@chainlink/token": "^1.1.0",
     "@openzeppelin/contracts": "^4.7.2",
     "chainlink": "^0.8.2",
     "dotenv": "^16.0.1"

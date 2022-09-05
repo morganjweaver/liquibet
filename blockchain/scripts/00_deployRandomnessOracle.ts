@@ -1,6 +1,6 @@
 import { ethers, Contract } from "ethers"; // Hardhat for testing
 import "dotenv/config";
-import * as VRFJSON from "../artifacts/contracts/VRFOracle.sol/VRFv2Consumer.json";
+import * as VRFJSON from "../artifacts/contracts/VRFv2Consumer.sol/VRFv2Consumer.json";
 import { VRFv2Consumer } from "../typechain-types";
 import {
   getSigner,
@@ -34,7 +34,7 @@ async function main() {
     VRFJSON.abi,
     signer
   ) as VRFv2Consumer;
-  VRFConsumer.requestRandomWords(); //load randomness
+  await VRFConsumer.requestRandomWords(); //load randomness
   console.log("Requested random words for lottery");
 }
 
