@@ -169,14 +169,14 @@ describe("Liquibet contract", async () => {
         it("should calculate lottery prize for a player", async function() {
           const pool = await liquiBetContract.pools(POOL_ID);
           const apy = pool.stakingInfo[3];
-          const expectedPrize = (TIER_BUYIN_PRICE / 100) * Number(apy);
+          const expectedPrize = (Number(apy) / 100) * TIER_BUYIN_PRICE;
+          console.log("expectedPrize: " + expectedPrize);
 
           expect(Number(ethers.utils.formatEther(lotteryPrize))).to.eq(expectedPrize);
         });
 
         it("should calculate correct liquidation prize for each winning player", async function() {
-          //TODO should be Number(ethers.utils.formatEther(liquidationPrize)))
-          expect(liquidationPrize).to.eq(TIER_BUYIN_PRICE);
+          expect(Number(ethers.utils.formatEther(liquidationPrize))).to.eq(TIER_BUYIN_PRICE);
         });
         
         describe("When player withdraws funds", async function() {
