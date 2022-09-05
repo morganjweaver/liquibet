@@ -174,10 +174,10 @@ _For more examples, please refer to the [Documentation](https://example.com)_
 <!-- ROADMAP -->
 ## Roadmap
 
-- [x] Implement ERC1155 Token
-- [x] Implement Chainlink Keepers and VRF
-- [ ] Work on Frontend
-- [ ] Deploy contract and play
+- [x] ERC1155 Token
+- [x] Chainlink Keepers and VRF
+- [x] Liquibet contract
+- [ ] Frontend
 
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
