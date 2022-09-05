@@ -32,7 +32,7 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
     uint256 liquidationPrice;
   }
 
-  //TODO do we need name, asset and apy? we can get is all from the staking contract address?
+  //TODO do we need name, asset and apy? we can get it all from the staking contract address?
   struct StakingInfo {
     bytes32 name;
     address contractAddress;
@@ -81,7 +81,6 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
   
   ///@notice create a new pool
   ///@dev tier levels are hard-coded for now
-  /// TODO only admin can call for now
   function createPool(
     uint256 startDateTime, 
     uint256 lockPeriod,
@@ -162,7 +161,6 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
 
   ///@notice performs the contract resolution phase - withdraws staked funds, performs lottery and determines liqudation winners
   ///@dev if winningPlayersCount = 0 (all players got liquidated) case not handled
-  // TODO permission grantRole(KEEPER_ROLE)
   function resolution(uint256 poolId) public onlyRole(DEFAULT_ADMIN_ROLE) {
     // check that lockin period ended
     Pool storage pool = pools[poolId];
@@ -251,7 +249,6 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
   ///@notice get s address of the lottery winner
   ///@dev if there is no winner (all the tiers got liquidated), returns zero address (address(0))
   function getLotteryWinner(uint256 poolId, uint256 totalPlayersCount) private view returns (address winner) {
-    
     address[] memory allPlayers = new address[](totalPlayersCount);
     uint256 arrIndex;
     for (uint8 i = 0; i < tiers[poolId].length; i++) {
@@ -271,7 +268,6 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
   }
 
   function setupStaking(address stakingContractAddress) private returns (StakingInfo memory) {
-    
     IStakingProvider stakingContract = IStakingProvider(stakingContractAddress);
     (bytes32 name, bytes32 asset, uint256 apy) = stakingContract.getStakingInfo();
     return StakingInfo(name, stakingContractAddress, asset, apy, 0);
@@ -302,13 +298,10 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
   }
 
   function getRandomNumber() private view returns (uint256) {
-      uint256 oracleRand = VRFOracle.s_randomWords(0);
-      if(oracleRand != 0){
-        return oracleRand;
-      }
-      return uint256(blockhash(block.number - 1));
+      return VRFOracle.s_randomWords(0);
   }
 
+  ///@notice add new pool to storage
   function addNewPool(uint256 newPoolId, Pool memory pool) private {
     poolIds.push(newPoolId);
     pools[newPoolId] = pool;
