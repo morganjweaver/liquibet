@@ -238,7 +238,7 @@ async function initContracts(accounts: SignerWithAddress[]): Promise<ILiquibetCo
   ) as VRFCoordinatorV2Mock;
   await vrfContract.deployed();
   
-  const fundAmount: BigNumber = BigNumber.from(1000000000000);
+  const fundAmount: BigNumber = networkConfig[chainId].fundAmount;
   const vrfTx: ContractTransaction = await vrfContract.createSubscription();
   const txReceipt: ContractReceipt = await vrfTx.wait(1);
 
@@ -259,6 +259,8 @@ async function initContracts(accounts: SignerWithAddress[]): Promise<ILiquibetCo
   ) as VRFv2Consumer;
   await vrfConsumerContract.deployed();
   await vrfConsumerContract.requestRandomWords();
+  const requestId: BigNumber = await vrfConsumerContract.s_requestId();
+  await vrfContract.fulfillRandomWords(requestId, vrfConsumerContract.address);
 
   const liquiBetContract = await liquiBetContractFactory.deploy(
     TOKEN_UPDATE_INTERVAL,
