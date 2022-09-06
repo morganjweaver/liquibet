@@ -105,9 +105,7 @@ describe("Liquibet contract", async () => {
         }  
       );
       const purchaseTokenTxReceipt = await tx.wait();
-      const gasUsed = purchaseTokenTxReceipt.gasUsed;
-      const effectiveGasPrice = purchaseTokenTxReceipt.effectiveGasPrice;
-      txFee = gasUsed.mul(effectiveGasPrice);
+      txFee = getTxFee(purchaseTokenTxReceipt);
       tokensEarned = await tokenContract.balanceOf(accounts[0].address, TOKEN_ID);
     });
 
@@ -186,34 +184,47 @@ describe("Liquibet contract", async () => {
           beforeEach(async function() {  
             accountValue = await accounts[0].getBalance();
 
+            const approveSftTx = await tokenContract.setApprovalForAll(
+              liquiBetContract.address,
+              true
+            );
+            const approveTxReceipt = await approveSftTx.wait();
+
             const tx = await liquiBetContract.withdraw(TOKEN_ID);
             const purchaseTokenTxReceipt = await tx.wait();
-            const gasUsed = purchaseTokenTxReceipt.gasUsed;
-            const effectiveGasPrice = purchaseTokenTxReceipt.effectiveGasPrice;
-            txFee = gasUsed.mul(effectiveGasPrice);
+
+            txFee = getTxFee(purchaseTokenTxReceipt).add(getTxFee(approveTxReceipt));
           });
 
-          // TODO tests won't work because contract doesn't have permission for token.burn
           it("should transfer correct ETH amount to a player", async function() {            
-            // const newAccountValue = await accounts[0].getBalance();
-            // const diff = newAccountValue.sub(accountValue);
+            const newAccountValue = await accounts[0].getBalance();
+            const diff = newAccountValue.sub(accountValue);
             
             // const expectedDiff = lotteryPrize.add(liquidationPrize).sub(txFee);
-            // expect(expectedDiff.sub(diff)).to.eq("0");
+            const expectedDiff = lotteryPrize.sub(txFee);
+
+            expect(expectedDiff.sub(diff)).to.eq("0");
           });
           
-          it("should not allow to withdraw funds again", async function() {      
-            // TODO
+          it("should not allow to withdraw funds again", async function() {   
+            await expect(liquiBetContract.withdraw(TOKEN_ID)).to.be.revertedWith("Token with given id doesn't exist");
           });
           
-          it("should burn the 1155 token", async function() {      
-            // TODO
+          it("should burn the 1155 token", async function() {    
+            let tokensLeft = await tokenContract.balanceOf(accounts[0].address, TOKEN_ID);
+            expect(tokensLeft.toString()).to.eq("0");
           });
         });
       });
     });
   });
 });
+
+function getTxFee(purchaseTokenTxReceipt: ContractReceipt) {
+  const gasUsed = purchaseTokenTxReceipt.gasUsed;
+  const effectiveGasPrice = purchaseTokenTxReceipt.effectiveGasPrice;
+  return gasUsed.mul(effectiveGasPrice);
+}
 
 async function initContracts(accounts: SignerWithAddress[]): Promise<ILiquibetContracts> {
   const chainId: number | undefined = network.config.chainId;
