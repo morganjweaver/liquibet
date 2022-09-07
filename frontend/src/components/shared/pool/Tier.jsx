@@ -1,11 +1,11 @@
 import React from 'react';
 
-function Tier({tierId, buyInPrice, liquidationPrice, buySFT}) {
+function Tier({poolId, tierId, buyInPrice, liquidationPrice, buyInTier}) {
   return (
     <div className="my-5">
       <button
         className="tier-btn text-white font-bold py-2 px-4 text-sm"
-        onClick={() => buySFT(tierId, buyInPrice)}
+        onClick={() => buyInTier(poolId, tierId, buyInPrice)}
       >
         BUY TIER {tierId}
       </button>

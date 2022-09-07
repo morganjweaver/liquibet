@@ -1,11 +1,9 @@
 import React from "react";
-import LiquibetJSON from "../../contracts/Liquibet.json";
 import { useState, useEffect } from "react";
-import { environment } from "../../environment";
 import { toast } from 'react-toastify';
 import { ethers, utils } from 'ethers';
 import { useParams } from "react-router-dom";
-import { getPoolData, getPoolSFTs } from "../../blockchainAgent";
+import { getPoolData, getPoolSFTs, buySFT } from "../../blockchainAgent";
 import LoadingComponent from "../shared/common/LoadingComponent";
 import ResolvedPoolDetailsMock from "../shared/pool/ResolvedPoolDetailsMock";
 import Tier from "../shared/pool/Tier";
@@ -15,39 +13,19 @@ function PoolDetails() {
   const [dataFetched, updateDataFetched] = useState(false);
   const [poolData, updatePoolData] = useState({});
   const [poolSfts, updatePoolSfts] = useState({});
-  const [message, updateMessage] = useState("");
   
   const params = useParams();
   const poolId = params.id;
-  const provider = new ethers.providers.Web3Provider(window.ethereum);
   
-  async function buySFT(tierId, price) {
+  async function buyInTier(poolId, tierId, price) {
     try {
-      const signer = provider.getSigner();
-
-      let contract = new ethers.Contract(
-        environment.liquibetContractAddress,
-        LiquibetJSON.abi,
-        signer
-      );
-      const salePrice = utils.parseUnits(price, "ether");
-      // TODO did not manage to transform poolData.contractFee form hex to decimals
-      const feePrice = utils.parseUnits("10000000", "wei");
-      const totalPrice = salePrice.add(feePrice);
-      updateMessage("Buying the SFT... Please Wait (Up to 5 mins)");
-      //run the executeSale function
-      let transaction = await contract.buyIn(1, tierId, 1, {
-        value: totalPrice,
-      });
-      await transaction.wait();
+      await buySFT(poolId, tierId, price);
 
       let poolSfts = await getPoolSFTs(poolId);
       updatePoolSfts(poolSfts);
-
       toast.success("You successfully bought the SFT!");
-      updateMessage("");
     } catch (e) {
-      toast.error("Upload Error: " + e.message);
+      toast.error("Error: " + e.message);
     }
   }
 
@@ -99,14 +77,14 @@ function PoolDetails() {
               {poolData.tiers && !poolData.isPoolResolved && 
                 poolData.tiers.map((tier, i) => 
                   <Tier key={i} 
+                        poolId={poolId} 
                         tierId={i} 
                         buyInPrice={utils.formatEther(tier.buyInPrice)} 
                         liquidationPrice={utils.formatUnits(tier.liquidationPrice, 0)}
-                        buySFT={buySFT} />)}
+                        buyInTier={buyInTier} />)}
             </div>
           </div>
         </div>
-        <div className="text-center my-1">{message}</div>
         <div className="mt-4 text-center">
           <h2>My SFTs</h2>
           <hr className="my-2 border-[#B5289E]"/>

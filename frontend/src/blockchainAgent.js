@@ -213,9 +213,24 @@ function getSftDetails(tokenId) {
   }
 }
 
+
+async function buySFT(poolId, tierId, price) {
+  let contract = getLiquibetContract(provider.getSigner());
+  
+  const salePrice = utils.parseUnits(price, "ether");
+  // TODO fee from contract
+  const feePrice = utils.parseUnits("10000000", "wei");
+  const totalPrice = salePrice.add(feePrice);
+  let transaction = await contract.buyIn(poolId, tierId, 1, {
+    value: totalPrice,
+  });
+  await transaction.wait();
+}
+
 export {
   getPoolData,
   getPoolSFTs,
   getSftDetails,
-  getSft
+  getSft,
+  buySFT
 }
