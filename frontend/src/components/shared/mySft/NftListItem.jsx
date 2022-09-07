@@ -2,7 +2,6 @@ import React from "react";
 import { Link } from "react-router-dom";
 
 function NftListItem({ image, tier, amount, tokenId }) {
-  // const file = item.item.metadata;
   return (
     <div className="inline-block mb-5 mr-4 border-2 border-pink-400 rounded">
       <div className="text-center">

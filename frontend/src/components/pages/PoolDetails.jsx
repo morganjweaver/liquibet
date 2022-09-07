@@ -4,12 +4,12 @@ import { useState, useEffect } from "react";
 import { environment } from "../../environment";
 import { toast } from 'react-toastify';
 import { ethers, utils } from 'ethers';
-import Tier from "../shared/Tier";
 import { useParams } from "react-router-dom";
-import SmallSftCard from "../shared/SmallSftCard";
 import { getPoolData, getPoolSFTs } from "../../blockchainAgent";
-import LoadingComponent from "../shared/LoadingComponent";
-import ResolvedPoolDetailsMock from "../shared/ResolvedPoolDetailsMock";
+import LoadingComponent from "../shared/common/LoadingComponent";
+import ResolvedPoolDetailsMock from "../shared/pool/ResolvedPoolDetailsMock";
+import Tier from "../shared/pool/Tier";
+import SmallSftCard from "../shared/pool/SmallSftCard";
 
 function PoolDetails() {
   const [dataFetched, updateDataFetched] = useState(false);

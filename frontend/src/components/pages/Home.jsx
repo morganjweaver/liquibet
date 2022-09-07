@@ -1,8 +1,8 @@
 import React from "react";
 import { useState, useEffect } from "react";
-import SmallPoolCard from "../shared/SmallPoolCard";
+import SmallPoolCard from "../shared/pool/SmallPoolCard";
 import { getPoolData } from "../../blockchainAgent";
-import LoadingComponent from "../shared/LoadingComponent";
+import LoadingComponent from "../shared/common/LoadingComponent";
 import { formatDateTime, formatPeriod } from "../../helpers/dates";
 
 function Home() {

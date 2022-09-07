@@ -2,10 +2,10 @@ import React from "react";
 import { useState } from "react";
 import { ethers, utils } from "ethers";
 import { useParams } from "react-router-dom";
-import NftListItem from "../NftListItem";
+import NftListItem from "../shared/mySft/NftListItem";
 import { useEffect } from "react";
 import { getPoolSFTs } from "../../blockchainAgent";
-import LoadingComponent from "../shared/LoadingComponent";
+import LoadingComponent from "../shared/common/LoadingComponent";
 
 function MySFTs() {
   const [dataFetched, updateDataFetched] = useState(false);

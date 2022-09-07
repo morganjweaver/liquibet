@@ -1,11 +1,10 @@
-import Header from "./shared/Header";
-import NotFound from "./shared/NotFound";
+import NotFound from "./shared/common/NotFound";
 import Home from "./pages/Home";
 import PoolDetails from "./pages/PoolDetails";
 import MySFTs from "./pages/MySFTs";
 import SftDetails from "./pages/SftDetails";
-import Footer from "./shared/Footer";
-import NavBar from "./shared/NavBar";
+import Footer from "./shared/common/Footer";
+import NavBar from "./shared/common/NavBar";
 import { Routes, Route } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import { Fragment } from "react";

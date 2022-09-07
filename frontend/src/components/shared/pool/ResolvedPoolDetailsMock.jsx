@@ -1,4 +1,4 @@
-import React from 'react'
+import React from 'react';
 
 function  ResolvedPoolDetailsMock({id, tier, assetPair}) {
   let liquidated = assetPair.lowestPrice < assetPair.referencePrice - assetPair.referencePrice * (tier.liquidationPrice / 100);

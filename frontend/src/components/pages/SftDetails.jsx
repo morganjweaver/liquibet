@@ -2,7 +2,7 @@ import React from 'react';
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { getSft, getPoolData } from "../../blockchainAgent";
-import LoadingComponent from "../shared/LoadingComponent";
+import LoadingComponent from "../shared/common/LoadingComponent";
 import { useNavigate  } from "react-router-dom";
 
 function SftDetails() {
