@@ -12,7 +12,7 @@ import SmallSftCard from "../shared/pool/SmallSftCard";
 function PoolDetails() {
   const [dataFetched, updateDataFetched] = useState(false);
   const [poolData, updatePoolData] = useState({});
-  const [poolSfts, updatePoolSfts] = useState({});
+  const [poolSfts, updatePoolSfts] = useState([]);
   
   const params = useParams();
   const poolId = params.id;
@@ -34,7 +34,7 @@ function PoolDetails() {
       let poolData = await getPoolData(poolId);
       let poolSfts = await getPoolSFTs(poolId);
       console.log("poolData: " + poolData.isPoolResolved);
-      console.log("poolSfts: " + poolSfts.sfts);
+      console.log("poolSfts: " + poolSfts);
       updatePoolData(poolData);
       updatePoolSfts(poolSfts);
       updateDataFetched(true);
@@ -88,7 +88,7 @@ function PoolDetails() {
         <div className="mt-4 text-center">
           <h2>My SFTs</h2>
           <hr className="my-2 border-[#B5289E]"/>
-          {poolSfts.sfts.map(sft =>  
+          {poolSfts.map(sft =>  
             <SmallSftCard key={sft.tokenId} amount={sft.amount} tokenId={sft.tokenId} imgSrc={sft.imgSrc} tierId={sft.tierId} status={sft.status} />
           )}
 {/*           

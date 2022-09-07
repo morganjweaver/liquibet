@@ -15,39 +15,14 @@ function getLiquibetContract(signer) {
   );
 }
 
-function getMockResolvedPool() {
-  
-  let pool = {
-    asset: "ETHUSD",
-    creatorFee: 0.0002,
-    contractFee: 0.0001,
-    startDateTime: formatDateTime(1661859600),
-    lockPeriod: formatPeriod(129600),
-    stakingApy: 7,
-    amountStaked: 100,
-    assetPair: {
-      lowestPrice: 1222,
-      referencePrice: 1438
-    },
-    isPoolResolved: true,
-    tiers: [
-      getTier("0.1", 10),
-      getTier("0.2", 15),
-      getTier("0.4", 25),
-      getTier("0.7", 32),
-      getTier("1", 40)
-    ]
-  };
-
-  return pool;
-
-  function getTier(buyInPrice, liquidationPrice) {
-    return {
-      buyInPrice: buyInPrice,
-      liquidationPrice: liquidationPrice
-    }
-  }
+function getTokenContract(tokenAddress) {
+  return new ethers.Contract(
+    tokenAddress,
+    SFTJSON.abi,
+    provider
+  );
 }
+
 async function getPoolData(poolId) {
 
   if (poolId == 2) {
@@ -81,21 +56,6 @@ async function getPoolData(poolId) {
   return item;
 }
 
-function getMockPoolSfts() {
-  let sfts = [
-    {
-      tokenId: 11,
-      tierId: 1,
-      amount: 1,
-      imgSrc: "https://gateway.pinata.cloud/ipfs/QmdKf5YL2ppZ3wJ1sgyCfUffq8dewbCCcfDscCfkTWorKn",
-      status: "Oh noes! R U DED? :("
-    }
-  ]
-  return {
-    sfts: sfts,
-  }
-}
-
 async function getPoolSFTs(poolId) {
   try {
     if (poolId == 2) {
@@ -103,16 +63,8 @@ async function getPoolSFTs(poolId) {
     }
 
     const signer = provider.getSigner();
-
-    let contract = getLiquibetContract(signer);
-
-    const tokenAddress = await contract.token();
-    let tokenContract = new ethers.Contract(
-      tokenAddress,
-      SFTJSON.abi,
-      provider
-    );
-
+    const contract = getLiquibetContract(signer);
+    const tokenContract = getTokenContract(await contract.token());
     const userAddress = await signer.getAddress();
     const sfts = [];
 
@@ -130,17 +82,9 @@ async function getPoolSFTs(poolId) {
         });
       }
     }
+    
+    return sfts;
 
-    let item = {
-      owner: userAddress,
-      tokenAddress: tokenAddress,
-      // tokenContract: tokenContract,
-      sfts: sfts,
-    };
-
-    console.log(item);
-
-    return item;
   } catch (e) {
     toast.error("Error: " + e.message);
   }
@@ -151,13 +95,7 @@ async function getSft(tokenId) {
   const userAddress = await signer.getAddress();
   
   const contract = getLiquibetContract(signer);
-  const tokenAddress = await contract.token();
-
-  let tokenContract = new ethers.Contract(
-    tokenAddress,
-    SFTJSON.abi,
-    provider
-  );
+  const tokenContract = getTokenContract(await contract.token());
   
   let amountTier = await tokenContract.balanceOf(userAddress, tokenId);
   
@@ -199,7 +137,7 @@ function getSftDetails(tokenId) {
       tierId: 1,
       poolStatus: "Open",
       status: "Health Level 3, OK!"
-    }
+    };
   } else {
     
     return {
@@ -209,10 +147,9 @@ function getSftDetails(tokenId) {
       tierId: 2,
       poolStatus: "Closed",
       status: "Health Level 4, looking happy!"
-    }
+    };
   }
 }
-
 
 async function buySFT(poolId, tierId, price) {
   let contract = getLiquibetContract(provider.getSigner());
@@ -227,10 +164,56 @@ async function buySFT(poolId, tierId, price) {
   await transaction.wait();
 }
 
+function getMockPoolSfts() {
+  return [
+    {
+      tokenId: 11,
+      tierId: 1,
+      amount: 1,
+      imgSrc: "https://gateway.pinata.cloud/ipfs/QmdKf5YL2ppZ3wJ1sgyCfUffq8dewbCCcfDscCfkTWorKn",
+      status: "Oh noes! R U DED? :("
+    }
+  ];
+}
+
+function getMockResolvedPool() {
+  
+  let pool = {
+    asset: "ETHUSD",
+    creatorFee: 0.0002,
+    contractFee: 0.0001,
+    startDateTime: formatDateTime(1661859600),
+    lockPeriod: formatPeriod(129600),
+    stakingApy: 7,
+    amountStaked: 100,
+    assetPair: {
+      lowestPrice: 1222,
+      referencePrice: 1438
+    },
+    isPoolResolved: true,
+    tiers: [
+      getTier("0.1", 10),
+      getTier("0.2", 15),
+      getTier("0.4", 25),
+      getTier("0.7", 32),
+      getTier("1", 40)
+    ]
+  };
+
+  return pool;
+
+  function getTier(buyInPrice, liquidationPrice) {
+    return {
+      buyInPrice: buyInPrice,
+      liquidationPrice: liquidationPrice
+    };
+  }
+}
+
 export {
   getPoolData,
   getPoolSFTs,
   getSftDetails,
   getSft,
   buySFT
-}
+};
