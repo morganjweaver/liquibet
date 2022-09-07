@@ -1,7 +1,6 @@
 import React from "react";
 import { useState } from "react";
 import { ethers, utils } from "ethers";
-import { useParams } from "react-router-dom";
 import NftListItem from "../shared/mySft/NftListItem";
 import { useEffect } from "react";
 import { getPoolSFTs } from "../../blockchainAgent";
@@ -11,16 +10,7 @@ function MySFTs() {
   const [dataFetched, updateDataFetched] = useState(false);
   const [data, updateData] = useState({});
   const [data2, updateData2] = useState({});
-  const params = useParams();
   const poolId = 1;
-
-  let images = [
-    "https://gateway.pinata.cloud/ipfs/QmaJ3ry7QYUjvCgao4oNF11qhhfeP9ThNkTCWFfM4Lqhqv",
-    "https://gateway.pinata.cloud/ipfs/QmQQzfdhs3w95WTKLFFtHA8WEPA2XouyDzeVK74KS7vJ8a",
-    "https://gateway.pinata.cloud/ipfs/QmRf7fdqC5WVryZmfXH5PnHXs4SUzPfQ3RUrpwfDSvzTAa",
-    "https://gateway.pinata.cloud/ipfs/QmSoE4z3fqGunb9RWrLq9MzDE3qibJZoYgrPnfjCzdH748",
-    "https://gateway.pinata.cloud/ipfs/QmPLUVrJ4vYm6PMnUGzUcqrwq3Xvk3SPN7wK3YtwcgDyGC",
-  ];
 
   useEffect(() => {
     (async () => {
