@@ -53,7 +53,7 @@ async function getPoolData(poolId) {
   let tiersCount = 5;
   let tiers = [];
   for(let i = 0; i < tiersCount; i++) {
-    let tier = await contract.tiers(1, i);
+    let tier = await contract.tiers(poolId, i);
     tiers.push(tier);
   }
 
@@ -76,10 +76,6 @@ async function getPoolData(poolId) {
 
 async function getPoolSFTs(poolId) {
   try {
-    if (poolId == 2) {
-      return getMockPoolSfts();
-    }
-
     const signer = provider.getSigner();
     const contract = getLiquibetContract(signer);
     const tokenContract = getTokenContract(await contract.token());
@@ -172,26 +168,13 @@ function getSftDetails(tokenId) {
 async function buySFT(poolId, tierId, price) {
   let contract = getLiquibetContract(provider.getSigner());
   
-  const salePrice = utils.parseUnits(price, "ether");
-  // TODO fee from contract
-  const feePrice = utils.parseUnits("10000000", "wei");
+  const salePrice = utils.parseEther(price);
+  const feePrice = await contract.fee();
   const totalPrice = salePrice.add(feePrice);
   let transaction = await contract.buyIn(poolId, tierId, 1, {
     value: totalPrice,
   });
   await transaction.wait();
-}
-
-function getMockPoolSfts() {
-  return [
-    {
-      tokenId: 11,
-      tierId: 1,
-      amount: 1,
-      imgSrc: "https://gateway.pinata.cloud/ipfs/QmdKf5YL2ppZ3wJ1sgyCfUffq8dewbCCcfDscCfkTWorKn",
-      status: "Oh noes! R U DED? :("
-    }
-  ];
 }
 
 function getMockResolvedPool() {
