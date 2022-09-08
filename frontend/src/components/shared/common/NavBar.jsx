@@ -1,20 +1,13 @@
-import { Link, NavLink } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { useLocation } from "react-router";
 import CustomNavLink from "./CustomNavLink";
 
 function Navbar() {
   const [connected, toggleConnect] = useState(false);
-  const location = useLocation();
-  const [currAddress, updateAddress] = useState("");
 
   useEffect(() => {
     checkIfWalletIsConnected();
   }, []);
-
-  useEffect(() => {
-    updateAddress(currAddress);
-  }, [currAddress]);
 
   async function checkIfWalletIsConnected() {
     if (window.ethereum) {
@@ -23,8 +16,7 @@ function Navbar() {
       });
 
       if (accounts.length > 0) {
-        const account = accounts[0];
-        updateAddress(account);
+        toggleConnect(true);
         return;
       }
     }
@@ -48,13 +40,7 @@ function Navbar() {
       method: "eth_requestAccounts",
     });
 
-    if (accounts.length === 0) {
-      toggleConnect(false);
-    } else {
-      toggleConnect(true);
-    }
-
-    updateAddress(accounts[0]);
+    toggleConnect(accounts.length > 0);
   }
 
   return (
@@ -90,14 +76,6 @@ function Navbar() {
           </li>
         </ul>
       </nav>
-      {/* <div className="text-bold text-right mr-8 text-sm text-white">
-        {currAddress !== "" ? "Connected to" : "Not Connected. Please login."}{" "}
-        {currAddress !== ""
-          ? currAddress.substring(0, 6) +
-            "..." +
-            currAddress.substring(currAddress.length - 4)
-          : ""}
-      </div> */}
     </div>
   );
 }
