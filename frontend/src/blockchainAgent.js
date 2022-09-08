@@ -23,8 +23,25 @@ function getTokenContract(tokenAddress) {
   );
 }
 
-async function getPoolData(poolId) {
+async function getPoolIds() {
+  const contract = getLiquibetContract(provider);
+  const count = await contract.getPoolsCount();
+  return [...Array(count).keys()].map(i => i + 1);
+}
 
+async function getPools() {
+  const contract = getLiquibetContract(provider);
+  const count = await contract.getPoolsCount();
+
+  const pools = []; 
+  for (let poolId = 1; poolId <= count; poolId++) {
+    pools.push(await getPoolData(poolId));
+  }
+  
+  return pools;
+}
+
+async function getPoolData(poolId) {
   if (poolId == 2) {
     return getMockResolvedPool();
   }
@@ -41,6 +58,7 @@ async function getPoolData(poolId) {
   }
 
   let item = {
+    poolId: utils.formatUnits(pool.poolId, 0),
     asset: utils.parseBytes32String(pool.assetPair.name),
     creatorFee: utils.formatEther(pool.creatorFee),
     contractFee: utils.formatEther(fee),
@@ -211,6 +229,8 @@ function getMockResolvedPool() {
 }
 
 export {
+  getPools,
+  getPoolIds,
   getPoolData,
   getPoolSFTs,
   getSftDetails,

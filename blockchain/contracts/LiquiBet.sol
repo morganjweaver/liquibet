@@ -79,6 +79,10 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
   }
 
   receive() external payable {}
+
+  function getPoolsCount() external view returns (uint256) {
+    return poolIds.length;
+  }
   
   ///@notice create a new pool
   ///@dev tier levels are hard-coded for now
@@ -103,8 +107,9 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
     StakingInfo memory stakingInfo = setupStaking(stakingContractAddress);
 
     // pool setup
+    uint256 newPoolId = poolIds.length + 1;
     Pool memory pool = Pool({
-      poolId: poolIds.length,
+      poolId: newPoolId,
       assetPair: assetPair, 
       startDateTime: startDateTime, 
       lockPeriod: lockPeriod, 
@@ -115,7 +120,6 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
       resolved: false
     });
 
-    uint256 newPoolId = poolIds.length + 1;
     addNewPool(newPoolId, pool);
     
     // tier levels hard-coded for now

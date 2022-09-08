@@ -74,10 +74,14 @@ describe("Liquibet contract", async () => {
   });
   
   describe("When admin user creates new pool", async function() {
-    
     it("new pool is created with correct poolId value", async function() {
       let poolId = await liquiBetContract.poolIds(0);
       expect(poolId).to.eq(POOL_ID);
+    });
+    
+    it("gets correct pools length", async function() {
+      let count = await liquiBetContract.getPoolsCount();
+      expect(count).to.eq(1);
     });
   });
   

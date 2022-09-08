@@ -1,21 +1,16 @@
 import React from "react";
 import { useState, useEffect } from "react";
 import SmallPoolCard from "../shared/pool/SmallPoolCard";
-import { getPoolData } from "../../blockchainAgent";
+import { getPools } from "../../blockchainAgent";
 import LoadingComponent from "../shared/common/LoadingComponent";
-import { formatDateTime, formatPeriod } from "../../helpers/dates";
 
 function Home() {
-
   const [dataFetched, updateDataFetched] = useState(false);
-  const [data, updateData] = useState({});
-  
-  const poolId = 1;
+  const [pools, updatePools] = useState([]);
   
   useEffect(() => {
     (async () => {
-      let item = await getPoolData(poolId);
-      updateData(item);
+      updatePools(await getPools());
       updateDataFetched(true);
     })();
   }, []);
@@ -33,18 +28,15 @@ function Home() {
         
         {dataFetched && (
           <div className="text-center">
+            {pools.map(pool => (
               <SmallPoolCard 
-                poolId={1} 
-                startDateTime={data.startDateTime} 
-                lockPeriod={data.lockPeriod}
-                asset={data.asset}
+                key={pool.poolId}
+                poolId={pool.poolId} 
+                startDateTime={pool.startDateTime} 
+                lockPeriod={pool.lockPeriod}
+                asset={pool.asset}
                 imgSrc="/images/Ethereum-logo.png" />
-              <SmallPoolCard 
-                poolId={2} 
-                startDateTime={formatDateTime(1661859600)} 
-                lockPeriod={formatPeriod(129600)}
-                asset="ETHUSD"
-                imgSrc="/images/Ethereum-logo.png" />
+            ))}
           </div>
         )}
     </div>
