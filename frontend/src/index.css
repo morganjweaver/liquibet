@@ -2,6 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
+/*** UTILITY ***/
+
 .bg-primary {
   background: #1C142B;
   backdrop-filter: blur(232px);
@@ -27,25 +29,6 @@
   margin-right: auto;
 }
 
-.navbar-links a:hover,
-.navbar-links a.current  {
-  box-shadow: 0 2px 0 #fff;
-}
-
-.pool-details p {
-  line-height: 2.5rem;
-}
-
-.tier-btn {
-  background: #3E0C55;
-  border-radius: 2px;
-  width: 140px;
-}
-.tier-btn:hover {
-  box-shadow: 0px 4px 20px rgba(255, 86, 246, 0.51);
-  backdrop-filter: blur(192px);
-}
-
 .backdrop-1 {
   box-shadow: 0px 4px 50px rgba(255, 86, 246, 0.51);
   backdrop-filter: blur(192px);
@@ -60,14 +43,39 @@
   background:rgba(181, 40, 158, 0.7)
 }
 
-.sft-details .details-text span {
-  padding: 5px 10px;
+/*** NAVBAR ***/
+
+.navbar-links a:hover,
+.navbar-links a.current  {
+  box-shadow: 0 2px 0 #fff;
 }
+
+/*** POOL DETAILS ***/
+
+.pool-details p {
+  line-height: 2.5rem;
+}
+
+.tier-btn {
+  background: #3E0C55;
+  border-radius: 2px;
+  width: 140px;
+}
+  .tier-btn:hover {
+    box-shadow: 0px 4px 20px rgba(255, 86, 246, 0.51);
+    backdrop-filter: blur(192px);
+  }
 
 .tiers-resolution span {
   padding: 5px 10px;
   min-width: 75px;
   display: inline-block;
+}
+
+/*** SFT DETAILS ***/
+
+.sft-details .details-text span {
+  padding: 5px 10px;
 }
 
 /*
