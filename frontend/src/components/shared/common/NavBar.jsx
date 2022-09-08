@@ -1,6 +1,7 @@
-import { Link } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router";
+import CustomNavLink from "./CustomNavLink";
 
 function Navbar() {
   const [connected, toggleConnect] = useState(false);
@@ -73,21 +74,8 @@ function Navbar() {
           </li>
           <li className="w-2/6">
             <ul className="lg:flex justify-between mr-10 text-lg navbar-links">
-              {location.pathname === "/" ? (
-                <Link className="border-b-2 p-2" to="/">LiquiBet</Link>
-              ) : (
-                <Link className="hover:border-b-2 p-2" to="/">LiquiBet</Link>
-              )}
-              {/* {location.pathname === "/pool" ? (
-                <Link className="border-b-2 p-2" to="/pool">Pool</Link>
-              ) : (
-                <Link className="hover:border-b-2 p-2" to="/pool">Pool</Link>
-              )} */}
-              {location.pathname === "/mySFTs" ? (
-                <Link className="border-b-2 p-2" to="/mySFTs">My SFTs</Link>
-              ) : (
-                <Link className="hover:border-b-2 p-2" to="/mySFTs">My SFTs</Link>
-              )}
+              <CustomNavLink text="LiquiBet" to="/" />
+              <CustomNavLink text="My SFTs" to="/mySFTs" />
               {!connected ? 
                 <button
                   className="enableEthereumButton backdrop-1-sm bg-[#B5289E] hover:bg-[#B5289EBB] text-white py-2 px-4 rounded text-sm"

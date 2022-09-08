@@ -27,6 +27,11 @@
   margin-right: auto;
 }
 
+.navbar-links a:hover,
+.navbar-links a.current  {
+  box-shadow: 0 2px 0 #fff;
+}
+
 .pool-details p {
   line-height: 2.5rem;
 }
