@@ -42,10 +42,6 @@ async function getPools() {
 }
 
 async function getPoolData(poolId) {
-  if (poolId == 2) {
-    return getMockResolvedPool();
-  }
-
   const contract = getLiquibetContract(provider);
   const pool = await contract.pools(poolId);
   const fee = await contract.fee();
@@ -54,24 +50,31 @@ async function getPoolData(poolId) {
   let tiers = [];
   for(let i = 0; i < tiersCount; i++) {
     let tier = await contract.tiers(poolId, i);
-    tiers.push(tier);
+    tiers.push({
+      buyInPrice: utils.formatEther(tier.buyInPrice),
+      liquidationPrice: utils.formatUnits(tier.liquidationPrice, 0)
+    });
   }
 
-  let item = {
+  return {
     poolId: utils.formatUnits(pool.poolId, 0),
-    asset: utils.parseBytes32String(pool.assetPair.name),
     creatorFee: utils.formatEther(pool.creatorFee),
     contractFee: utils.formatEther(fee),
     startDateTime: formatDateTime(pool.startDateTime),
     lockPeriod: formatPeriod(pool.lockPeriod),
     stakingApy: utils.formatUnits(pool.stakingInfo.apy, 0),
     amountStaked: utils.formatEther(pool.stakingInfo.amountStaked),
+    assetPair: {
+      name: utils.parseBytes32String(pool.assetPair.name),
+      lowestPrice: utils.formatUnits(pool.assetPair.lowestPrice, 0), 
+      referencePrice: utils.formatUnits(pool.assetPair.referencePrice, 0)
+    },
     tiers: tiers,
-    // isPoolResolved: Date.now() * 1000 > ethers.utils.formatUnits(pool.startDateTime, 0) + ethers.utils.formatUnits(pool.lockPeriod, 0)
-    isPoolResolved: false,
+    // TODO: pool.lockInExecuted
+    locked: Date.now() / 1000 > ethers.utils.formatUnits(pool.startDateTime, 0),
+    // TODO: pool.resolved
+    resolved: Date.now() / 1000 > parseInt(ethers.utils.formatUnits(pool.startDateTime, 0)) + parseInt(ethers.utils.formatUnits(pool.lockPeriod, 0))
   };
-
-  return item;
 }
 
 async function getPoolSFTs(poolId) {
@@ -175,40 +178,6 @@ async function buySFT(poolId, tierId, price) {
     value: totalPrice,
   });
   await transaction.wait();
-}
-
-function getMockResolvedPool() {
-  
-  let pool = {
-    asset: "ETHUSD",
-    creatorFee: 0.0002,
-    contractFee: 0.0001,
-    startDateTime: formatDateTime(1661859600),
-    lockPeriod: formatPeriod(129600),
-    stakingApy: 7,
-    amountStaked: 100,
-    assetPair: {
-      lowestPrice: 1222,
-      referencePrice: 1438
-    },
-    isPoolResolved: true,
-    tiers: [
-      getTier("0.1", 10),
-      getTier("0.2", 15),
-      getTier("0.4", 25),
-      getTier("0.7", 32),
-      getTier("1", 40)
-    ]
-  };
-
-  return pool;
-
-  function getTier(buyInPrice, liquidationPrice) {
-    return {
-      buyInPrice: buyInPrice,
-      liquidationPrice: liquidationPrice
-    };
-  }
 }
 
 export {

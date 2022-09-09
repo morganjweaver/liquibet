@@ -34,7 +34,7 @@ function Home() {
                 poolId={pool.poolId} 
                 startDateTime={pool.startDateTime} 
                 lockPeriod={pool.lockPeriod}
-                asset={pool.asset}
+                asset={pool.assetPair.name}
                 imgSrc="/images/Ethereum-logo.png" />
             ))}
           </div>
