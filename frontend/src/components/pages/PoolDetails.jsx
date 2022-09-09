@@ -1,13 +1,13 @@
 import React from "react";
 import { useState, useEffect } from "react";
 import { toast } from 'react-toastify';
-import { ethers, utils } from 'ethers';
 import { useParams } from "react-router-dom";
 import { getPoolData, getPoolSFTs, buySFT } from "../../blockchainAgent";
 import LoadingComponent from "../shared/common/LoadingComponent";
 import ResolvedPoolDetailsMock from "../shared/pool/ResolvedPoolDetailsMock";
 import Tier from "../shared/pool/Tier";
 import SmallSftCard from "../shared/pool/SmallSftCard";
+import PoolStatusTag from "../shared/pool/PoolStatusTag";
 
 function PoolDetails() {
   const [dataFetched, updateDataFetched] = useState(false);
@@ -46,9 +46,7 @@ function PoolDetails() {
     <div className="text-white font-1 mt-2">
       <div className="relative">
         <h1 className="text-center text-4xl">Pool {poolId}</h1>
-        {!poolData.locked && <span className="rounded bg-green-600 py-1 px-3 absolute left-8 top-2">OPEN</span>}
-        {poolData.locked && !poolData.resolved && <span className="rounded bg-blue-400 py-1 px-3 absolute left-8 top-2">LOCKED</span>}
-        {poolData.locked && poolData.resolved && <span className="rounded bg-red-400 py-1 px-3 absolute left-8 top-2">CLOSED</span>}
+        <PoolStatusTag locked={poolData.locked} resolved={poolData.resolved} />
       </div>
       <div className="pool-details w-100 h-200 mb-5 mt-2 py-4 px-4">
         <div className="flex">
