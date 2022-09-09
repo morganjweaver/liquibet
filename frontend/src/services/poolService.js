@@ -1,27 +1,7 @@
-import LiquibetJSON from "./contracts/Liquibet.json";
-import { environment } from "./environment";
 import { ethers, utils } from 'ethers';
-import { formatDateTime, formatPeriod, formatTimestamp } from "./helpers/dates";
-import SFTJSON from "./contracts/SFT.json";
+import { formatDateTime, formatPeriod } from "../helpers/dates";
 import { toast } from "react-toastify";
-  
-const provider = new ethers.providers.Web3Provider(window.ethereum);
-
-function getLiquibetContract(signer) {
-  return new ethers.Contract(
-    environment.liquibetContractAddress,
-    LiquibetJSON.abi,
-    signer
-  );
-}
-
-function getTokenContract(tokenAddress) {
-  return new ethers.Contract(
-    tokenAddress,
-    SFTJSON.abi,
-    provider
-  );
-}
+import { provider, getLiquibetContract, getTokenContract } from "./blockchainService";
 
 async function getPoolIds() {
   const contract = getLiquibetContract(provider);

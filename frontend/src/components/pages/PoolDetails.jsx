@@ -2,7 +2,7 @@ import React from "react";
 import { useState, useEffect } from "react";
 import { toast } from 'react-toastify';
 import { useParams } from "react-router-dom";
-import { getPoolData, getPoolSFTs, buySFT } from "../../blockchainAgent";
+import { getPoolData, getPoolSFTs, buySFT } from "../../services/poolService";
 import LoadingComponent from "../shared/common/LoadingComponent";
 import ResolvedPoolDetailsMock from "../shared/pool/ResolvedPoolDetailsMock";
 import Tier from "../shared/pool/Tier";

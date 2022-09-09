@@ -3,7 +3,7 @@ import { useState } from "react";
 import { ethers, utils } from "ethers";
 import NftListItem from "../shared/mySft/NftListItem";
 import { useEffect } from "react";
-import { getPoolSFTs, getPoolIds } from "../../blockchainAgent";
+import { getPoolSFTs, getPoolIds } from "../../services/poolService";
 import LoadingComponent from "../shared/common/LoadingComponent";
 
 function MySFTs() {

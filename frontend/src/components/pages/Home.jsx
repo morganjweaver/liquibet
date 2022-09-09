@@ -1,7 +1,7 @@
 import React from "react";
 import { useState, useEffect } from "react";
 import SmallPoolCard from "../shared/pool/SmallPoolCard";
-import { getPools } from "../../blockchainAgent";
+import { getPools } from "../../services/poolService";
 import LoadingComponent from "../shared/common/LoadingComponent";
 
 function Home() {
