@@ -60,6 +60,9 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
   mapping(uint256 => uint256) public poolLiquidationPrizes;         // poolId => prize for each winning player
   mapping(uint256 => mapping(address => uint256)) public poolLotteryWinners;     // poolId => mapping(playerAddres => amount)
 
+  event PoolCreated(uint256 poolId, uint256 startDateTime, uint256 lockPeriod, bytes32 assetPairName);
+  event TokenMinted(address to, bytes32 assetPairName, uint56 poolId, uint256 tier);
+
   constructor(
     uint256 _tokenUpdateInterval, 
     address _tokenPriceFeed, 
@@ -86,6 +89,8 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
   
   ///@notice create a new pool
   ///@dev tier levels are hard-coded for now
+  // TODO: pools should be separate SFT-implementing contracts.  Combine SFT with Pool info.
+  // Needed so that the oracle passed in actually matches the asset they're tracking. 
   function createPool(
     uint256 startDateTime, 
     uint256 lockPeriod,
@@ -133,7 +138,7 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
     // setup a keeper that calls the resolution function with poolId on the end of the lockInPeriod
     // setup periodical keeper calls to update lowestPrice of the pools assets
 
-    // emit PoolCreatedEvent
+    emit PoolCreated(poolId, startDateTime, lockPeriod, assetPairName);
   }
   
   ///@notice buy a spot in a pool, mints a sft token for a caller
@@ -150,10 +155,6 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
     // check msg.value >= necessary tier level amount for pool + fee
     require(msg.value >= amount * tiers[poolId][tierId].buyInPrice + fee, "Not enough funds for chosen tier level");
 
-    // mint token based on pool and tier
-    uint256 tokenId = getTokenId(poolId, tierId); // tokenId = poolId_tierId
-    token.mint(msg.sender, tokenId, amount, "");
-
     // store pool ETH amount 
     pool.stakingInfo.amountStaked += msg.value - fee;
     pool.creatorFee += fee;
@@ -161,7 +162,13 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
     tierPlayers[poolId][tierId].push(msg.sender);
     pool.totalPlayersCount++;
 
-    // emit TokenMinted()
+    // Moved this down to prevent reentrancy attacks
+    // mint token based on pool and tier
+    uint256 tokenId = getTokenId(poolId, tierId); // tokenId = poolId_tierId
+    token.mint(msg.sender, tokenId, amount, "");
+    
+    emit TokenMinted(msg.sender, pool.assetPair.name , pool.poolId, tierId);
+
   }
 
   ///@notice performs the contract resolution phase - withdraws staked funds, performs lottery and determines liqudation winners
