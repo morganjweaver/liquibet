@@ -21,6 +21,17 @@ async function getPools() {
   return pools;
 }
 
+function parseTokenUnits(assetName, amount){
+  console.log("ASSET: %s; units %s", assetName, ethers.utils.formatEther(amount));
+  if (assetName === "ETHUSD" || assetName === "LINKUSD"){
+    return ethers.utils.formatEther(amount);
+  } else if (assetName === "BTCUSD"){
+  console.log("ASSET: %s; units %s", assetName, (amount/100000000));
+    return (amount / 100000000);
+  }
+  else throw new Error("Couldn't parse asset name %s", assetName);
+}
+
 async function getPoolData(poolId) {
   const contract = getLiquibetContract(provider);
   const pool = await contract.pools(poolId);
@@ -46,8 +57,8 @@ async function getPoolData(poolId) {
     amountStaked: utils.formatEther(pool.stakingInfo.amountStaked),
     assetPair: {
       name: utils.parseBytes32String(pool.assetPair.name),
-      lowestPrice: utils.formatUnits(pool.assetPair.lowestPrice, 0), 
-      referencePrice: utils.formatUnits(pool.assetPair.referencePrice, 0)
+      lowestPrice: parseTokenUnits(utils.parseBytes32String(pool.assetPair.name), pool.assetPair.lowestPrice),
+      referencePrice: parseTokenUnits(utils.parseBytes32String(pool.assetPair.name), pool.assetPair.referencePrice),
     },
     tiers: tiers,
     // TODO: pool.lockInExecuted
