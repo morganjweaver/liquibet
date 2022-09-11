@@ -67,8 +67,8 @@ function PoolDetails() {
             <div className="mt-4">
               {poolData.locked && (
                 <div>
-                  <p>Reference price: {poolData.assetPair.referencePrice}$</p>
-                  <p>Lowest price: {poolData.assetPair.lowestPrice}$</p>
+                  <p>Reference price: ${poolData.assetPair.referencePrice}</p>
+                  <p>Lowest price: ${poolData.assetPair.lowestPrice}</p>
                   {poolData.tiers.map((tier, i) => <ResolvedPoolDetailsMock key={i} id={i} tier={tier} assetPair={poolData.assetPair} />)}
                 </div>
               )}
