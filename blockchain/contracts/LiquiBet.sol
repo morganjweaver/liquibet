@@ -162,13 +162,11 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
     tierPlayers[poolId][tierId].push(msg.sender);
     pool.totalPlayersCount++;
 
-    // Moved this down to prevent reentrancy attacks
     // mint token based on pool and tier
     uint256 tokenId = getTokenId(poolId, tierId); // tokenId = poolId_tierId
     token.mint(msg.sender, tokenId, amount, "");
     
     emit TokenMinted(msg.sender, pool.assetPair.name , pool.poolId, tierId);
-
   }
 
   ///@notice performs the contract resolution phase - withdraws staked funds, performs lottery and determines liqudation winners
