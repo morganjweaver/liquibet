@@ -38,7 +38,7 @@ function PoolDetails() {
       updatePoolSfts(poolSfts);
       updateDataFetched(true);
     })();
-  }, []);
+  }, [poolId]);
 
   if (!dataFetched) return <LoadingComponent />;
 
@@ -46,7 +46,7 @@ function PoolDetails() {
     <div className="text-white font-1 mt-2">
       <div className="relative">
         <h1 className="text-center text-4xl">Pool {poolId}</h1>
-        <PoolStatusTag locked={poolData.locked} resolved={poolData.resolved} />
+        <PoolStatusTag locked={poolData.locked} resolved={poolData.resolved} cssClass="absolute left-8 top-2" />
       </div>
       <div className="pool-details w-100 h-200 mb-5 mt-2 py-4 px-4">
         <div className="flex">

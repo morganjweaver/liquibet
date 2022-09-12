@@ -1,7 +1,8 @@
 import React from 'react';
+import { isTierLiquidated } from '../../../helpers/utils';
 
 function  ResolvedPoolDetailsMock({id, tier, assetPair}) {
-  let liquidated = assetPair.lowestPrice < assetPair.referencePrice - assetPair.referencePrice * (tier.liquidationPrice / 100);
+  let liquidated = isTierLiquidated(tier.liquidationPrice, assetPair);
   return (
     <div className='text-white'>
       <div className="my-3 tiers-resolution">

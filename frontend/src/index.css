@@ -59,7 +59,6 @@
 .tier-btn {
   background: #3E0C55;
   border-radius: 2px;
-  width: 140px;
 }
   .tier-btn:hover {
     box-shadow: 0px 4px 20px rgba(255, 86, 246, 0.51);

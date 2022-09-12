@@ -237,6 +237,7 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
   ///@dev burns only 1 sft from a user - if user hase more sfts from the same pool they cannot be used to withdraw winnings again
   function withdraw(uint256 tokenId) external {
     require(token.exists(tokenId), "Token with given id doesn't exist");
+    require(token.balanceOf(msg.sender, tokenId) > 0, "Message sender is not the owner of the token");
 
     uint poolId = getPoolId(tokenId);       
     uint tierId = getTierId(tokenId);       

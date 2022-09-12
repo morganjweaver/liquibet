@@ -1,5 +1,6 @@
 import { ethers, utils } from 'ethers';
 import { formatDateTime, formatPeriod } from "../helpers/dates";
+import { parseTokenUnits } from "../helpers/utils";
 import { toast } from "react-toastify";
 import { provider, getLiquibetContract, getTokenContract } from "./blockchainService";
 
@@ -19,18 +20,6 @@ async function getPools() {
   }
   
   return pools;
-}
-
-// Chinlink feeds return to 8 decimal places NOT 18 so add 10 decimal places back in
-function parseTokenUnits(assetName, amount){
-  console.log("ASSET: %s; units %s", assetName, ethers.utils.formatEther(amount));
-  if (assetName === "ETHUSD" || assetName === "LINKUSD"){
-    return (Math.round((ethers.utils.formatEther(amount)*1e10)*100)/100).toFixed(2);
-  } else if (assetName === "BTCUSD"){
-  console.log("ASSET: %s; units %s", assetName, (amount/100000000));
-    return (amount / 100000000);
-  }
-  else throw new Error("Couldn't parse asset name %s", assetName);
 }
 
 async function getPoolData(poolId) {
@@ -123,6 +112,17 @@ async function getSft(tokenId) {
   };
 }
 
+
+async function withdraw(tokenId) {
+  try {
+    const signer = provider.getSigner();
+    const contract = getLiquibetContract(signer);
+    await contract.withdraw(tokenId);
+  } catch (e) {
+    toast.error("Error: " + e.message);
+  }
+}
+
 function getSftDetails(tokenId) {
   
   // TODO: get image urls from ipfs
@@ -138,7 +138,7 @@ function getSftDetails(tokenId) {
   //   images.push(imageSrc);
   // }
   
-  if (tokenId == 11) {
+  if (tokenId === 11) {
     return {
       id: 1,
       imgSrc: "https://gateway.pinata.cloud/ipfs/QmRf7fdqC5WVryZmfXH5PnHXs4SUzPfQ3RUrpwfDSvzTAa",
@@ -179,5 +179,6 @@ export {
   getPoolSFTs,
   getSftDetails,
   getSft,
-  buySFT
+  buySFT,
+  withdraw
 };
