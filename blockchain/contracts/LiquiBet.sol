@@ -271,7 +271,6 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
 
     if (allPlayers.length > 0) {
         uint256 winnerIndex = getRandomNumber() % allPlayers.length;
-        
         return allPlayers[winnerIndex];
     }
 
