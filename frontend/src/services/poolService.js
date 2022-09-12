@@ -21,6 +21,18 @@ async function getPools() {
   return pools;
 }
 
+// Chinlink feeds return to 8 decimal places NOT 18 so add 10 decimal places back in
+function parseTokenUnits(assetName, amount){
+  console.log("ASSET: %s; units %s", assetName, ethers.utils.formatEther(amount));
+  if (assetName === "ETHUSD" || assetName === "LINKUSD"){
+    return (Math.round((ethers.utils.formatEther(amount)*1e10)*100)/100).toFixed(2);
+  } else if (assetName === "BTCUSD"){
+  console.log("ASSET: %s; units %s", assetName, (amount/100000000));
+    return (amount / 100000000);
+  }
+  else throw new Error("Couldn't parse asset name %s", assetName);
+}
+
 async function getPoolData(poolId) {
   const contract = getLiquibetContract(provider);
   const pool = await contract.pools(poolId);
@@ -46,8 +58,8 @@ async function getPoolData(poolId) {
     amountStaked: utils.formatEther(pool.stakingInfo.amountStaked),
     assetPair: {
       name: utils.parseBytes32String(pool.assetPair.name),
-      lowestPrice: utils.formatUnits(pool.assetPair.lowestPrice, 0), 
-      referencePrice: utils.formatUnits(pool.assetPair.referencePrice, 0)
+      lowestPrice: parseTokenUnits(utils.parseBytes32String(pool.assetPair.name), pool.assetPair.lowestPrice),
+      referencePrice: parseTokenUnits(utils.parseBytes32String(pool.assetPair.name), pool.assetPair.referencePrice),
     },
     tiers: tiers,
     // TODO: pool.lockInExecuted
@@ -126,10 +138,11 @@ function getSftDetails(tokenId) {
   //   images.push(imageSrc);
   // }
 
+  // No luck with IPFS, Poinata or NFTStorage :( so using Drive as backup for now
   if (tokenId == 11) {
     return {
       id: 1,
-      imgSrc: "https://gateway.pinata.cloud/ipfs/QmRf7fdqC5WVryZmfXH5PnHXs4SUzPfQ3RUrpwfDSvzTAa",
+      imgSrc: "https://drive.google.com/file/d/1weIIAGxYmUX-Csb5l_ULezTA6gCxQGjo/view?usp=sharing",
       poolId: 1,
       tierId: 1,
       poolStatus: "Open",
@@ -139,7 +152,7 @@ function getSftDetails(tokenId) {
     
     return {
       id: 2,
-      imgSrc: "https://gateway.pinata.cloud/ipfs/QmSoE4z3fqGunb9RWrLq9MzDE3qibJZoYgrPnfjCzdH748",
+      imgSrc: "https://drive.google.com/file/d/1eFu5qrySu5koUnsJTvrW3riN6tbjY0tp/view?usp=sharing",
       poolId: 1,
       tierId: 2,
       poolStatus: "Closed",

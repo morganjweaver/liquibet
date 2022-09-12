@@ -24,7 +24,9 @@ async function main() {
   );
 
   const tokenUpdateInterval = 60 * 60 * 24;
-  const priceFeedAddress = "0xa39434a63a52e749f02807ae27335515ba4b07f7";
+  // ETHUSD Feed; FIX IN FUTURE--allow variable oracles to match SFT contract when we 
+  // refactor with Pools inheriting the SFT type vs one SFT to service all tokens (bad)
+  const priceFeedAddress = "0xD4a33860578De61DBAbDc8BFdb98FD742fA7028e";
   const LiquiBetContract = await LiquiBetFactory.deploy(
     tokenUpdateInterval,
     priceFeedAddress,

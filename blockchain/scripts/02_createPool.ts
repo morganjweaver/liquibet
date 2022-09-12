@@ -7,19 +7,26 @@ import {
   checkBalance,
 } from "../helpers/utils";
 
+let PRICE_FEEDS_GOERLI = new Map([
+  ["BTCUSD", "0xa39434a63a52e749f02807ae27335515ba4b07f7"],
+  ["ETHUSD", "0xD4a33860578De61DBAbDc8BFdb98FD742fA7028e"],
+  ["LINKUSD", "0x48731cF7e84dc94C5f84577882c14Be11a5B7456"]
+  ]);
+
 async function main() {
   const signer = getSigner();
   if (!checkBalance(signer)) {
     return;
   }
-  if (process.argv.length < 8) throw new Error("Fee (in wei) or vrf contract address missing");
+  if (process.argv.length < 7) throw new Error("Fee (in wei) or vrf contract address or token name missing");
+  if (!PRICE_FEEDS_GOERLI.has(process.argv[4])) throw new Error("Please input BTCUSD, LINKUSD or ETHUSD for asset type.");
 
   const startDateTime = process.argv[2]; 
   const lockPeriod = process.argv[3];
-  const assetPairName = process.argv[4];
-  const priceFeedAddress = process.argv[5];
-  const stakingContractAddress = process.argv[6];   
-  const liquibetContractAddress = process.argv[7];  
+  const assetPairName = process.argv[4]; // "ETHUSD" or "BTCUSD" or "LINKUSD"
+  const priceFeedAddress = PRICE_FEEDS_GOERLI.get(process.argv[4]);
+  const stakingContractAddress = process.argv[5];   
+  const liquibetContractAddress = process.argv[6];  
   
   console.log("Attaching LiquiBet contract");
   const LiquiBetFactory = new ethers.ContractFactory(
@@ -35,7 +42,7 @@ async function main() {
     startDateTime,
     lockPeriod,
     ethers.utils.formatBytes32String(assetPairName),
-    priceFeedAddress,
+    priceFeedAddress!,
     stakingContractAddress
   );
 
