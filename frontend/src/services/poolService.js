@@ -7,7 +7,7 @@ import { provider, getLiquibetContract, getTokenContract } from "./blockchainSer
 async function getPoolIds() {
   const contract = getLiquibetContract(provider);
   const count = await contract.getPoolsCount();
-  return [...Array(count).keys()].map(i => i + 1);
+  return Array.from({ length: count }, (_, idx) => ++idx);
 }
 
 async function getPools() {
