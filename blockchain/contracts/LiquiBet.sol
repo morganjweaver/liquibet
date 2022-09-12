@@ -61,8 +61,9 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
   mapping(uint256 => mapping(address => uint256)) public poolLotteryWinners;     // poolId => mapping(playerAddres => amount)
 
   event PoolCreated(uint256 poolId, uint256 startDateTime, uint256 lockPeriod, bytes32 assetPairName);
-  event TokenMinted(address to, bytes32 assetPairName, uint56 poolId, uint256 tier);
-
+  event TokenMinted(address to, bytes32 assetPairName, uint256 poolId, uint256 tier);
+  event SFTCreated(address SFTcontract);
+  
   constructor(
     uint256 _tokenUpdateInterval, 
     address _tokenPriceFeed, 
@@ -79,6 +80,7 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
     lastPriceFeedUpdate = block.timestamp;
 
     _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+    emit SFTCreated(address(token));
   }
 
   receive() external payable {}
@@ -138,7 +140,7 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
     // setup a keeper that calls the resolution function with poolId on the end of the lockInPeriod
     // setup periodical keeper calls to update lowestPrice of the pools assets
 
-    emit PoolCreated(poolId, startDateTime, lockPeriod, assetPairName);
+    emit PoolCreated(newPoolId, startDateTime, lockPeriod, assetPairName);
   }
   
   ///@notice buy a spot in a pool, mints a sft token for a caller

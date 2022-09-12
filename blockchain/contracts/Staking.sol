@@ -39,7 +39,7 @@ contract Staking is KeeperCompatibleInterface, IStakingProvider {
         emit Deposit(msg.value, block.timestamp);
     }
 
-    function withdraw() external returns (uint256 amount) {
+    function withdraw() external returns (uint256 amountReturned) {
         uint256 amountDeposited = stakingCustomers[msg.sender].amountDeposited;
         require(amountDeposited > 0, "Customer has no funds staked");
 
@@ -64,7 +64,7 @@ contract Staking is KeeperCompatibleInterface, IStakingProvider {
         require(address(this).balance > returnAmount, 
         "Staking contract has insufficient funds for repayment!");
         
-        (bool result, bytes memory returnData) = (staker).call{
+        (bool result, ) = (staker).call{
             value: returnAmount}("");
         require(result == true, "Failure to withdraw ether");
     }
@@ -72,7 +72,7 @@ contract Staking is KeeperCompatibleInterface, IStakingProvider {
     // administrative function as deployer must deploy with a small amount of ETH
     function withdrawEntirety() public onlyOwner returns (uint256 amount){
         uint256 amount = address(this).balance;
-        (bool result, bytes memory returnData) = admin.call{value: address(this).balance}("");
+        (bool result, ) = admin.call{value: address(this).balance}("");
         require(result == true, "Failure to withdraw ether; contract may be ");
         return amount;
 

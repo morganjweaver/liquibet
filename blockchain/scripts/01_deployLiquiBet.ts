@@ -5,14 +5,16 @@ import {
   getSigner,
   checkBalance,
 } from "../helpers/utils";
+import { Liquibet } from "../typechain-types";
 
+// deploy with args ETH fee extracted from each buy-in (suggest no more than 10-20% of lowest buy-in or .001 )
 async function main() {
   const signer = getSigner();
   if (!checkBalance(signer)) {
     return;
   }
-  if (process.argv.length < 4) throw new Error("Fee (in wei) or vrf contract address missing");
-  const fee = process.argv[2];
+  if (process.argv.length < 4) throw new Error("Fee (in ETH) or vrf contract address missing");
+  const fee = ethers.utils.parseEther(process.argv[2].toString());
   const vrfContractAddress = process.argv[3];
     
   // Now deploy LiquiBet 
@@ -32,14 +34,14 @@ async function main() {
     priceFeedAddress,
     vrfContractAddress,
     fee
-  );
+  ) as Liquibet;
 
   console.log("Awaiting confirmation on LiquiBet deployment");
   await LiquiBetContract.deployed();
   console.log("Completed LiquiBet deployment");
   console.log(`LiquiBet contract deployed at ${LiquiBetContract.address}`);
-  
-  console.log(`Please register contract ${LiquiBetContract.address} at https://keepers.chain.link/goerli as Custom Logic Upkeep`);
+  const tokenAddress = await LiquiBetContract.token();
+  console.log(`Please register contracts ${LiquiBetContract.address} (main) and associated SFT contract ${tokenAddress} at https://keepers.chain.link/goerli as Custom Logic Upkeep`);
 }
 
 main().catch((error) => {

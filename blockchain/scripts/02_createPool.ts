@@ -7,6 +7,8 @@ import {
   checkBalance,
 } from "../helpers/utils";
 
+
+// HOW TO USE:  yarn ts-node scripts/02_createPool.ts UNIX_EPOCH_START_DATE asset_pair_name_string staking_address liquibet_contract_address
 let PRICE_FEEDS_GOERLI = new Map([
   ["BTCUSD", "0xa39434a63a52e749f02807ae27335515ba4b07f7"],
   ["ETHUSD", "0xD4a33860578De61DBAbDc8BFdb98FD742fA7028e"],
@@ -18,7 +20,7 @@ async function main() {
   if (!checkBalance(signer)) {
     return;
   }
-  if (process.argv.length < 7) throw new Error("Fee (in wei) or vrf contract address or token name missing");
+  if (process.argv.length < 7) throw new Error("Fee (in wei) or vrf contract address or token name or UNIX epoch start date missing");
   if (!PRICE_FEEDS_GOERLI.has(process.argv[4])) throw new Error("Please input BTCUSD, LINKUSD or ETHUSD for asset type.");
 
   const startDateTime = process.argv[2]; 
