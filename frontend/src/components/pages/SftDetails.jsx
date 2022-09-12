@@ -50,7 +50,7 @@ function SftDetails() {
           <hr className='my-4'/>
           <div>AMOUNT: {sftData.amount}</div>
           <div>STATUS: {sftData.status}</div>
-          {pool.resolved && !isLiquidated (
+          {pool.resolved && !isLiquidated && (
             <div className='w-100 text-center mt-8'>
               <button
                 className="tier-btn text-white font-bold py-2 px-4 w-2/3"
