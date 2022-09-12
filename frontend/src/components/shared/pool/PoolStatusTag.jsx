@@ -1,7 +1,7 @@
 import React from 'react';
 
-function PoolStatusTag({locked, resolved}) {
-  let [statusClass, status] = (() => {
+function PoolStatusTag({locked, resolved, cssClass}) {
+  let [bgColor, status] = (() => {
     if (locked && resolved) 
       return ["bg-red-600", "CLOSED"]; 
 
@@ -12,7 +12,7 @@ function PoolStatusTag({locked, resolved}) {
   })();
 
   return (
-    <span className={`${statusClass} rounded py-1 px-3 absolute left-8 top-2`}>{status}</span>
+    <span className={`${bgColor} ${cssClass} rounded py-1 px-3`}>{status}</span>
   )
 }
 

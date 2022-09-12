@@ -4,7 +4,7 @@ function Tier({poolId, tierId, buyInPrice, liquidationPrice, buyInTier}) {
   return (
     <div className="my-5">
       <button
-        className="tier-btn text-white font-bold py-2 px-4 text-sm"
+        className="tier-btn w-36 text-white font-bold py-2 px-4 text-sm"
         onClick={() => buyInTier(poolId, tierId, buyInPrice)}
       >
         BUY TIER {tierId}
