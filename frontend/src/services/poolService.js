@@ -1,12 +1,13 @@
 import { ethers, utils } from 'ethers';
 import { formatDateTime, formatPeriod } from "../helpers/dates";
+import { parseTokenUnits } from "../helpers/utils";
 import { toast } from "react-toastify";
 import { provider, getLiquibetContract, getTokenContract } from "./blockchainService";
 
 async function getPoolIds() {
   const contract = getLiquibetContract(provider);
   const count = await contract.getPoolsCount();
-  return [...Array(count).keys()].map(i => i + 1);
+  return Array.from({ length: count }, (_, idx) => ++idx);
 }
 
 async function getPools() {
@@ -21,23 +22,11 @@ async function getPools() {
   return pools;
 }
 
-// Chinlink feeds return to 8 decimal places NOT 18 so add 10 decimal places back in
-function parseTokenUnits(assetName, amount){
-  console.log("ASSET: %s; units %s", assetName, ethers.utils.formatEther(amount));
-  if (assetName === "ETHUSD" || assetName === "LINKUSD"){
-    return (Math.round((ethers.utils.formatEther(amount)*1e10)*100)/100).toFixed(2);
-  } else if (assetName === "BTCUSD"){
-  console.log("ASSET: %s; units %s", assetName, (amount/100000000));
-    return (amount / 100000000);
-  }
-  else throw new Error("Couldn't parse asset name %s", assetName);
-}
-
 async function getPoolData(poolId) {
   const contract = getLiquibetContract(provider);
   const pool = await contract.pools(poolId);
   const fee = await contract.fee();
-
+  
   let tiersCount = 5;
   let tiers = [];
   for(let i = 0; i < tiersCount; i++) {
@@ -123,6 +112,17 @@ async function getSft(tokenId) {
   };
 }
 
+
+async function withdraw(tokenId) {
+  try {
+    const signer = provider.getSigner();
+    const contract = getLiquibetContract(signer);
+    await contract.withdraw(tokenId);
+  } catch (e) {
+    toast.error("Error: " + e.message);
+  }
+}
+
 function getSftDetails(tokenId) {
   
   // TODO: get image urls from ipfs
@@ -139,10 +139,10 @@ function getSftDetails(tokenId) {
   // }
 
   // No luck with IPFS, Poinata or NFTStorage :( so using Drive as backup for now
-  if (tokenId === 11) {
+  if (tokenId == 11) {
     return {
       id: 1,
-      imgSrc: "/components/backup_images/bonsai_2.jpg",
+      imgSrc: "https://gateway.pinata.cloud/ipfs/QmRf7fdqC5WVryZmfXH5PnHXs4SUzPfQ3RUrpwfDSvzTAa",
       poolId: 1,
       tierId: 1,
       poolStatus: "Open",
@@ -152,7 +152,7 @@ function getSftDetails(tokenId) {
     
     return {
       id: 2,
-      imgSrc: "/components/backup_images/bonsai_4.jpg",
+      imgSrc: "https://gateway.pinata.cloud/ipfs/QmSoE4z3fqGunb9RWrLq9MzDE3qibJZoYgrPnfjCzdH748",
       poolId: 1,
       tierId: 2,
       poolStatus: "Closed",
@@ -180,5 +180,6 @@ export {
   getPoolSFTs,
   getSftDetails,
   getSft,
-  buySFT
+  buySFT,
+  withdraw
 };

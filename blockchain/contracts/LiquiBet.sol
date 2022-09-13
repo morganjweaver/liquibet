@@ -63,7 +63,8 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
   event PoolCreated(uint256 poolId, uint256 startDateTime, uint256 lockPeriod, bytes32 assetPairName);
   event TokenMinted(address to, bytes32 assetPairName, uint256 poolId, uint256 tier);
   event SFTCreated(address SFTcontract);
-  
+
+
   constructor(
     uint256 _tokenUpdateInterval, 
     address _tokenPriceFeed, 
@@ -239,6 +240,7 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
   ///@dev burns only 1 sft from a user - if user hase more sfts from the same pool they cannot be used to withdraw winnings again
   function withdraw(uint256 tokenId) external {
     require(token.exists(tokenId), "Token with given id doesn't exist");
+    require(token.balanceOf(msg.sender, tokenId) > 0, "Message sender is not the owner of the token");
 
     uint poolId = getPoolId(tokenId);       
     uint tierId = getTierId(tokenId);       
@@ -272,7 +274,6 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
 
     if (allPlayers.length > 0) {
         uint256 winnerIndex = getRandomNumber() % allPlayers.length;
-        
         return allPlayers[winnerIndex];
     }
 
@@ -371,7 +372,7 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
     override
     returns (bool upkeepNeeded, bytes memory performData)
   {
-    if(lastPriceFeedUpdate != 0 && block.timestamp + 6 hours > lastPriceFeedUpdate ){
+    if(lastPriceFeedUpdate != 0 && block.timestamp + 10 minutes > lastPriceFeedUpdate ){
       upkeepNeeded = true;
       performData = abi.encodePacked(uint256(0)); // This codes for the function to call in performUpkeep
       return (true, performData);

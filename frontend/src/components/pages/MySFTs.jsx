@@ -31,8 +31,11 @@ function MySFTs() {
 
   return (
     <div className="px-16 mt-4 bg-primary font-1 text-white">
-    {pools.map((pool, id) => (
-      <div>
+    {pools.map((pool, id) => {
+      if (pool.sfts.length === 0) return;
+
+      return (
+      <div key={id} className="mb-4">
         <h1 className="mb-3">POOL {pool.id}</h1>
         <div className="">
           {(pool.sfts.length === 0) && <h2 className="pl-4">You have no SFTs in this pool.</h2>}
@@ -47,7 +50,8 @@ function MySFTs() {
           ))}
         </div>
       </div>
-    ))}
+      )
+    })}
     </div>
   );
 }
