@@ -30,11 +30,11 @@ contract SFT is
     uint256 public lastTimeStamp;
     int256 public initialPrice;
 
-    mapping(uint256 => string) private _uris;
+    mapping(uint256 => string) public _uris;
     mapping(uint8 => bool) private _isLiquidated;
 
     // id:0 means liquidated, id:5 is healthiest SFT
-    string[] healthUrisIpfs = [
+    string[] public healthUrisIpfs = [
         "https://liquibet.infura-ipfs.io/ipfs/QmTCDNmaz2UGH5e8eRxo5uGK1sx1SEwehvTTiHkMoNMzFk",
         "https://liquibet.infura-ipfs.io/ipfs/Qme4NtSi6Au1Q38tm2LJPK1k3DLCobN1BEfteTgygLtECP",
         "https://liquibet.infura-ipfs.io/ipfs/QmXfpFou3fJGPWnP3AATDLjuUEygRU9MM91vb6Z4fks7Sc",
@@ -52,7 +52,7 @@ contract SFT is
         // set the price for the chosen currency pair.
         initialPrice = getLatestPrice();
 
-        // all STFs start with an healthy image
+        // all SFTs start with a healthy image
         _uris[TIER_1] = healthUrisIpfs[5];
         _uris[TIER_2] = healthUrisIpfs[5];
         _uris[TIER_3] = healthUrisIpfs[5];
@@ -60,12 +60,13 @@ contract SFT is
         _uris[TIER_5] = healthUrisIpfs[5];
     }
 
-    function uri(uint256 id) public view override returns (string memory) {
+    function uri(uint256 id) override public view returns (string memory) {
         return _uris[id];
     }
 
     function mint(address to, uint256 id, uint256 amount, bytes memory data) public onlyOwner {
         _mint(to, id, amount, data);
+        setTokenUri(id, healthUrisIpfs[5]);
     }
 
     function mintBatch(
@@ -112,7 +113,6 @@ contract SFT is
             int latestPrice = getLatestPrice();
 
             if (latestPrice >= initialPrice) {
-                console.log("NO LIQUIDATION -> returning!");
                 return;
             }
 
@@ -193,7 +193,6 @@ contract SFT is
                 return;
             }
         } else {
-            console.log(" INTERVAL NOT UP!");
             return;
         }
     }

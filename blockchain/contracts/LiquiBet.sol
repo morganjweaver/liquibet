@@ -62,6 +62,8 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
 
   event PoolCreated(uint256 poolId, uint256 startDateTime, uint256 lockPeriod, bytes32 assetPairName);
   event TokenMinted(address to, bytes32 assetPairName, uint256 poolId, uint256 tier);
+  event SFTCreated(address SFTcontract);
+
 
   constructor(
     uint256 _tokenUpdateInterval, 
@@ -79,6 +81,7 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
     lastPriceFeedUpdate = block.timestamp;
 
     _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+    emit SFTCreated(address(token));
   }
 
   receive() external payable {}
@@ -369,7 +372,7 @@ contract Liquibet is AccessControl, KeeperCompatibleInterface {
     override
     returns (bool upkeepNeeded, bytes memory performData)
   {
-    if(lastPriceFeedUpdate != 0 && block.timestamp + 6 hours > lastPriceFeedUpdate ){
+    if(lastPriceFeedUpdate != 0 && block.timestamp + 10 minutes > lastPriceFeedUpdate ){
       upkeepNeeded = true;
       performData = abi.encodePacked(uint256(0)); // This codes for the function to call in performUpkeep
       return (true, performData);

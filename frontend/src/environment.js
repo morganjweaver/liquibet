@@ -1,6 +1,6 @@
 
 export const environment = {
   network: 'goerli',
-  liquibetContractAddress: '0x75CD36dFc948348dd2700a383D4cAA161018c63D',
+  liquibetContractAddress: '0x4Da9a571879cA856AF00b38E27fCde7862c5D948',
   production: false
 };

@@ -26,7 +26,7 @@ async function getPoolData(poolId) {
   const contract = getLiquibetContract(provider);
   const pool = await contract.pools(poolId);
   const fee = await contract.fee();
-
+  
   let tiersCount = 5;
   let tiers = [];
   for(let i = 0; i < tiersCount; i++) {
@@ -137,8 +137,9 @@ function getSftDetails(tokenId) {
   //   let imageSrc = metaJson.image;
   //   images.push(imageSrc);
   // }
-  
-  if (tokenId === 11) {
+
+  // No luck with IPFS, Poinata or NFTStorage :( so using Drive as backup for now
+  if (tokenId == 11) {
     return {
       id: 1,
       imgSrc: "https://gateway.pinata.cloud/ipfs/QmRf7fdqC5WVryZmfXH5PnHXs4SUzPfQ3RUrpwfDSvzTAa",
