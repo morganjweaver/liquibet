@@ -22,7 +22,7 @@ function Home() {
         Buy, bet, and don't get liquidated!
       </h2>
       <p className="mt-8 text-white font-1">
-        A dynamic SFT Asset Derivative with Gambling and Lottery Mechanics
+        A Dynamic SFT Asset Derivative with Gambling and Lottery Mechanics
       </p>
         {!dataFetched && <LoadingComponent />}
         

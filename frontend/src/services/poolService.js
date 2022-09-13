@@ -139,10 +139,10 @@ function getSftDetails(tokenId) {
   // }
 
   // No luck with IPFS, Poinata or NFTStorage :( so using Drive as backup for now
-  if (tokenId == 11) {
+  if (tokenId === 11) {
     return {
       id: 1,
-      imgSrc: "https://drive.google.com/file/d/1weIIAGxYmUX-Csb5l_ULezTA6gCxQGjo/view?usp=sharing",
+      imgSrc: "/components/backup_images/bonsai_2.jpg",
       poolId: 1,
       tierId: 1,
       poolStatus: "Open",
@@ -152,7 +152,7 @@ function getSftDetails(tokenId) {
     
     return {
       id: 2,
-      imgSrc: "https://drive.google.com/file/d/1eFu5qrySu5koUnsJTvrW3riN6tbjY0tp/view?usp=sharing",
+      imgSrc: "/components/backup_images/bonsai_4.jpg",
       poolId: 1,
       tierId: 2,
       poolStatus: "Closed",
